@@ -18,8 +18,8 @@ interface PaginadoUsuario {
   size: number;
 }
 
-async function obtenerUsuarios(page: number, size: number): Promise<PaginadoUsuario> {
-  const { data } = await clienteApi.get('/usuarios', { params: { page, size } });
+async function obtenerUsuarios(page: number): Promise<PaginadoUsuario> {
+  const { data } = await clienteApi.get('/usuarios', { params: { page, size: 10 } });
   return data;
 }
 
@@ -49,13 +49,16 @@ export default function Usuarios() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['usuarios', page],
-    queryFn: () => obtenerUsuarios(page, 10),
+    queryFn: () => obtenerUsuarios(page),
   });
 
   const mutCrear = useMutation({
     mutationFn: crearUsuario,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['usuarios'] }); cerrarModal(); },
-    onError: () => setError('Error al guardar. Verifica los datos.'),
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Error al guardar. Verifica los datos.');
+    },
   });
 
   const mutActualizar = useMutation({
@@ -93,7 +96,7 @@ export default function Usuarios() {
       mutActualizar.mutate({ id: editando.id, body });
     } else {
       if (!form.contrasena) { setError('La contrasena es obligatoria.'); return; }
-      mutCrear.mutate(form);
+      mutCrear.mutate({ nombre: form.nombre, email: form.email, contrasena: form.contrasena, rol: form.rol, activo: true });
     }
   };
 
@@ -191,13 +194,18 @@ export default function Usuarios() {
                   {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
+              {form.rol === 'Estudiante' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-700">
+                  Los estudiantes se crean sin grupo. Asigna el grupo desde Configuracion despues de crear el usuario.
+                </div>
+              )}
               {editando && (
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="activo" checked={form.activo} onChange={e => setForm({...form, activo: e.target.checked})} />
                   <label htmlFor="activo" className="text-sm text-gray-700">Usuario activo</label>
                 </div>
               )}
-              {error && <p className="text-xs text-red-600">{error}</p>}
+              {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
             </div>
             <div className="flex gap-3 mt-6 justify-end">
               <button onClick={cerrarModal} className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>

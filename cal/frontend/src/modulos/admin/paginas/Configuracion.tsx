@@ -16,10 +16,22 @@ async function eliminar(ruta: string, id: number) {
   await clienteApi.delete(ruta + '/' + id);
 }
 
+interface Campo {
+  key: string;
+  label: string;
+  type?: string;
+  opciones?: { value: string; label: string }[];
+}
+
+function parsearValor(valor: string, tipo?: string): string | number {
+  if (tipo === 'number') return Number(valor);
+  return valor;
+}
+
 function TablaGenerica({ ruta, columnas, campos, titulo }: {
   ruta: string;
   columnas: string[];
-  campos: { key: string; label: string; type?: string; opciones?: {value: string; label: string}[] }[];
+  campos: Campo[];
   titulo: string;
 }) {
   const qc = useQueryClient();
@@ -35,8 +47,11 @@ function TablaGenerica({ ruta, columnas, campos, titulo }: {
 
   const mutCrear = useMutation({
     mutationFn: (body: object) => crear(ruta, body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: [ruta] }); setModal(false); setForm({}); },
-    onError: () => setError('Error al guardar.'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [ruta] }); setModal(false); setForm({}); setError(''); },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Error al guardar.'));
+    },
   });
 
   const mutEliminar = useMutation({
@@ -45,9 +60,11 @@ function TablaGenerica({ ruta, columnas, campos, titulo }: {
   });
 
   const guardar = () => {
-    const vacio = campos.find(c => !form[c.key] && c.type !== 'checkbox');
+    const vacio = campos.find(c => !form[c.key]);
     if (vacio) { setError('Todos los campos son obligatorios.'); return; }
-    mutCrear.mutate(form);
+    const body: Record<string, string | number> = {};
+    campos.forEach(c => { body[c.key] = parsearValor(form[c.key], c.type); });
+    mutCrear.mutate(body);
   };
 
   const totalPaginas = data ? Math.ceil(data.total / 10) : 1;
@@ -125,10 +142,10 @@ function TablaGenerica({ ruta, columnas, campos, titulo }: {
                   )}
                 </div>
               ))}
-              {error && <p className="text-xs text-red-600">{error}</p>}
+              {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
             </div>
             <div className="flex gap-3 mt-5 justify-end">
-              <button onClick={() => setModal(false)} className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+              <button onClick={() => { setModal(false); setError(''); }} className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
               <button onClick={guardar} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
             </div>
           </div>
@@ -188,8 +205,8 @@ export default function Configuracion() {
       columnas: ['Dia', 'Hora inicio', 'Hora fin', 'Bloque'],
       campos: [
         { key: 'diaSemana', label: 'Dia', opciones: [{value:'LUN',label:'Lunes'},{value:'MAR',label:'Martes'},{value:'MIE',label:'Miercoles'},{value:'JUE',label:'Jueves'},{value:'VIE',label:'Viernes'},{value:'SAB',label:'Sabado'}] },
-        { key: 'horaInicio', label: 'Hora inicio (HH:MM)' },
-        { key: 'horaFin', label: 'Hora fin (HH:MM)' },
+        { key: 'horaInicio', label: 'Hora inicio (HH:MM:SS)' },
+        { key: 'horaFin', label: 'Hora fin (HH:MM:SS)' },
         { key: 'bloqueIdx', label: 'Numero de bloque', type: 'number' },
       ],
     },
