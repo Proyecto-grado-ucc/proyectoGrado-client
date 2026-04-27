@@ -1,17 +1,23 @@
 ﻿import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { clienteApi } from '../../compartido/api';
 import { useAuthStore } from '../store';
 import type { CredencialesLogin, RespuestaAuth } from '../tipos';
 
 export default function Login() {
   const navigate = useNavigate();
-  const iniciarSesion = useAuthStore((s) => s.iniciarSesion);
+  const { iniciarSesion, estaAutenticado, usuario } = useAuthStore();
 
   const [form, setForm] = useState<CredencialesLogin>({ email: '', contrasena: '' });
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+
+  if (estaAutenticado && usuario) {
+    if (usuario.rol === 'Admin') return <Navigate to="/admin/dashboard" replace />;
+    if (usuario.rol === 'Docente') return <Navigate to="/docente/dashboard" replace />;
+    return <Navigate to="/estudiante/dashboard" replace />;
+  }
 
   const manejarEnvio = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +26,9 @@ export default function Login() {
     try {
       const { data } = await clienteApi.post<RespuestaAuth>('/auth/login', form);
       iniciarSesion(data.access_token, data.refresh_token, data.rol, form.email);
-      if (data.rol === 'Admin') navigate('/admin/dashboard');
-      else if (data.rol === 'Docente') navigate('/docente/dashboard');
-      else navigate('/estudiante/dashboard');
+      if (data.rol === 'Admin') navigate('/admin/dashboard', { replace: true });
+      else if (data.rol === 'Docente') navigate('/docente/dashboard', { replace: true });
+      else navigate('/estudiante/dashboard', { replace: true });
     } catch {
       setError('Credenciales incorrectas. Verifica tu correo y contrasena.');
     } finally {
