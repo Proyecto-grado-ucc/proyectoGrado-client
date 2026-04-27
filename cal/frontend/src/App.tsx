@@ -1,5 +1,7 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAuthStore } from './seguridad/store';
+import TransicionPagina from './compartido/TransicionPagina';
 import Login from './seguridad/paginas/Login';
 import RecuperarContrasena from './seguridad/paginas/RecuperarContrasena';
 import Inicio from './paginas/Inicio';
@@ -24,40 +26,49 @@ function RutaProtegida({ children }: { children: React.ReactNode }) {
   return estaAutenticado ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-export default function App() {
+function RutasAnimadas() {
+  const location = useLocation();
   return (
-    <BrowserRouter>
-      <Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+        <Route path="/login" element={<TransicionPagina><Login /></TransicionPagina>} />
+        <Route path="/recuperar-contrasena" element={<TransicionPagina><RecuperarContrasena /></TransicionPagina>} />
 
         <Route path="/admin" element={<RutaProtegida><LayoutAdmin /></RutaProtegida>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="horarios" element={<Horarios />} />
-          <Route path="evaluacion" element={<Evaluacion />} />
-          <Route path="usuarios" element={<Usuarios />} />
-          <Route path="configuracion" element={<Configuracion />} />
-          <Route path="auditoria" element={<Auditoria />} />
+          <Route path="dashboard" element={<TransicionPagina><Dashboard /></TransicionPagina>} />
+          <Route path="horarios" element={<TransicionPagina><Horarios /></TransicionPagina>} />
+          <Route path="evaluacion" element={<TransicionPagina><Evaluacion /></TransicionPagina>} />
+          <Route path="usuarios" element={<TransicionPagina><Usuarios /></TransicionPagina>} />
+          <Route path="configuracion" element={<TransicionPagina><Configuracion /></TransicionPagina>} />
+          <Route path="auditoria" element={<TransicionPagina><Auditoria /></TransicionPagina>} />
         </Route>
 
         <Route path="/docente" element={<RutaProtegida><LayoutDocente /></RutaProtegida>}>
           <Route index element={<Navigate to="/docente/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardDocente />} />
-          <Route path="horario" element={<HorarioDocente />} />
-          <Route path="evaluacion" element={<EvaluacionDocente />} />
+          <Route path="dashboard" element={<TransicionPagina><DashboardDocente /></TransicionPagina>} />
+          <Route path="horario" element={<TransicionPagina><HorarioDocente /></TransicionPagina>} />
+          <Route path="evaluacion" element={<TransicionPagina><EvaluacionDocente /></TransicionPagina>} />
         </Route>
 
         <Route path="/estudiante" element={<RutaProtegida><LayoutEstudiante /></RutaProtegida>}>
           <Route index element={<Navigate to="/estudiante/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardEstudiante />} />
-          <Route path="horario" element={<HorarioEstudiante />} />
-          <Route path="formularios" element={<FormulariosEstudiante />} />
+          <Route path="dashboard" element={<TransicionPagina><DashboardEstudiante /></TransicionPagina>} />
+          <Route path="horario" element={<TransicionPagina><HorarioEstudiante /></TransicionPagina>} />
+          <Route path="formularios" element={<TransicionPagina><FormulariosEstudiante /></TransicionPagina>} />
         </Route>
 
         <Route path="/inicio" element={<Inicio />} />
       </Routes>
+    </AnimatePresence>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <RutasAnimadas />
     </BrowserRouter>
   );
 }
