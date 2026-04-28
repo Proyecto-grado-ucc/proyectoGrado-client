@@ -28,6 +28,14 @@ async function crearUsuario(body: object) {
   return data;
 }
 
+async function registrarDocente(usuarioId: number) {
+  await clienteApi.post('/docentes', { usuarioId, especialidad: 'Ingles', cargaMaximaHoras: 40 });
+}
+
+async function registrarEstudiante(usuarioId: number) {
+  await clienteApi.post('/estudiantes', { usuarioId });
+}
+
 async function actualizarUsuario(id: number, body: object) {
   const { data } = await clienteApi.patch('/usuarios/' + id, body);
   return data;
@@ -54,10 +62,16 @@ export default function Usuarios() {
 
   const mutCrear = useMutation({
     mutationFn: crearUsuario,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['usuarios'] }); cerrarModal(); },
+    onSuccess: async (usuario) => {
+      if (usuario.rol === 'Docente') await registrarDocente(usuario.id);
+      if (usuario.rol === 'Estudiante') await registrarEstudiante(usuario.id);
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      qc.invalidateQueries({ queryKey: ['conteo-docentes'] });
+      cerrarModal();
+    },
     onError: (e: unknown) => {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Error al guardar. Verifica los datos.');
+      const msg = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Error al guardar.'));
     },
   });
 
@@ -69,7 +83,10 @@ export default function Usuarios() {
 
   const mutEliminar = useMutation({
     mutationFn: eliminarUsuario,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['usuarios'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      qc.invalidateQueries({ queryKey: ['conteo-docentes'] });
+    },
   });
 
   const abrirCrear = () => {
@@ -194,11 +211,6 @@ export default function Usuarios() {
                   {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-              {form.rol === 'Estudiante' && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-700">
-                  Los estudiantes se crean sin grupo. Asigna el grupo desde Configuracion despues de crear el usuario.
-                </div>
-              )}
               {editando && (
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="activo" checked={form.activo} onChange={e => setForm({...form, activo: e.target.checked})} />
