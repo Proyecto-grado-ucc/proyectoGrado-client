@@ -1,3 +1,7 @@
+$enc = [System.Text.UTF8Encoding]::new($false)
+
+# ─── HorarioDocente.tsx ───────────────────────────────────────────────────────
+$horarioDocente = @'
 import { useQuery } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
 import { useAuthStore } from '../../../seguridad/store';
@@ -143,3 +147,8 @@ export default function HorarioDocente() {
     </div>
   );
 }
+'@
+[System.IO.File]::WriteAllText(
+  'C:\Users\DANILO MONTEZUMA\Desktop\Folders\7mo\Tesis\actividad2-compiladores\cal\frontend\src\modulos\docente\paginas\HorarioDocente.tsx',
+  $horarioDocente, $enc)
+Write-Host "HorarioDocente.tsx written OK"

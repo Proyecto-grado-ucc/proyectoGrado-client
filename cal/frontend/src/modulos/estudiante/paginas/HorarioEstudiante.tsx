@@ -1,51 +1,107 @@
-﻿export default function HorarioEstudiante() {
-  const dias = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-  const franjas = ['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00', '18:00-20:00'];
+import { useQuery } from '@tanstack/react-query';
+import { clienteApi } from '../../../compartido/api';
 
-  const clases: Record<string, { grupo: string; docente: string; aula: string }> = {
-    'Martes-14:00-16:00': { grupo: 'Ingles B1 G02', docente: 'R. Lopez', aula: 'A-02' },
-    'Miercoles-14:00-16:00': { grupo: 'Ingles B1 G02', docente: 'R. Lopez', aula: 'A-02' },
-    'Jueves-14:00-16:00': { grupo: 'Ingles B1 G02', docente: 'R. Lopez', aula: 'A-02' },
+interface Asignacion { grupoId: number; docenteId: number; aulaId: number; franjaId: number; }
+interface Horario { id: number; periodoNombre: string; asignaciones: Asignacion[]; }
+interface Franja { id: number; diaSemana: string; horaInicio: string; horaFin: string; bloqueIdx: number; }
+interface Grupo { id: number; codigo: string; cursoNombre: string; }
+interface Docente { id: number; usuarioNombre: string; }
+interface Aula { id: number; codigo: string; }
+
+const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
+  const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 200 } });
+  return (data.items ?? data) as T[];
+};
+
+const DIAS: Record<string, string> = { LUN: 'Lunes', MAR: 'Martes', MIE: 'Miercoles', JUE: 'Jueves', VIE: 'Viernes', SAB: 'Sabado' };
+const ORDEN_DIAS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
+
+export default function HorarioEstudiante() {
+  const { data: horarios } = useQuery({ queryKey: ['horarios-est'], queryFn: () => fetchAll<Horario>('/horarios') });
+  const { data: franjas } = useQuery({ queryKey: ['franjas-est'], queryFn: () => fetchAll<Franja>('/franjas-horarias') });
+  const { data: grupos } = useQuery({ queryKey: ['grupos-est'], queryFn: () => fetchAll<Grupo>('/grupos') });
+  const { data: docentes } = useQuery({ queryKey: ['docentes-est'], queryFn: () => fetchAll<Docente>('/docentes') });
+  const { data: aulas } = useQuery({ queryKey: ['aulas-est'], queryFn: () => fetchAll<Aula>('/aulas') });
+
+  const horarioActivo = horarios?.[0];
+  const asignaciones = horarioActivo?.asignaciones ?? [];
+
+  const diasPresentes = [...new Set(
+    asignaciones.map(a => franjas?.find(f => f.id === a.franjaId)?.diaSemana ?? '').filter(Boolean)
+  )].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
+
+  const bloquesUnicos = [...new Set(
+    asignaciones.map(a => franjas?.find(f => f.id === a.franjaId)?.bloqueIdx ?? -1).filter(b => b >= 0)
+  )].sort((a, b) => a - b);
+
+  const getAsig = (dia: string, bloque: number) => {
+    const franja = franjas?.find(f => f.diaSemana === dia && f.bloqueIdx === bloque);
+    if (!franja) return null;
+    return asignaciones.find(a => a.franjaId === franja.id) ?? null;
+  };
+
+  const getHora = (bloque: number) => {
+    const f = franjas?.find(x => x.bloqueIdx === bloque);
+    return f ? `${f.horaInicio.substring(0, 5)}-${f.horaFin.substring(0, 5)}` : `Bloque ${bloque}`;
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 min-h-full bg-gray-50">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mi Horario</h1>
-          <p className="text-gray-500 text-sm">Ingles B1 — Grupo G02 — Periodo 2026-1</p>
+          <p className="text-gray-500 text-sm mt-0.5">
+            {horarioActivo ? `${horarioActivo.periodoNombre} — ${asignaciones.length} sesiones` : 'Sin horario disponible'}
+          </p>
         </div>
-        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Publicado</span>
+        {horarioActivo && <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Publicado</span>}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-gray-100">
-          <div className="px-3 py-3 text-xs font-semibold text-gray-400 bg-gray-50" />
-          {dias.map(d => (
-            <div key={d} className="px-3 py-3 text-xs font-semibold text-gray-600 text-center bg-gray-50 border-l border-gray-100">{d}</div>
-          ))}
+      {!horarioActivo ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
+          <p className="text-base font-medium text-gray-600 mb-1">Sin horario disponible</p>
+          <p className="text-sm">El administrador debe generar y publicar el horario.</p>
         </div>
-        {franjas.map(franja => (
-          <div key={franja} className="grid grid-cols-7 border-b border-gray-50">
-            <div className="px-3 py-4 text-xs text-gray-400 bg-gray-50 flex items-center">{franja}</div>
-            {dias.map(dia => {
-              const key = dia + '-' + franja;
-              const clase = clases[key];
-              return (
-                <div key={dia} className="border-l border-gray-50 p-1 min-h-16">
-                  {clase && (
-                    <div className="rounded-lg border bg-blue-100 border-blue-300 text-blue-800 p-2 h-full">
-                      <p className="text-xs font-medium leading-tight">{clase.grupo}</p>
-                      <p className="text-xs opacity-70 mt-0.5">Prof. {clase.docente}</p>
-                      <p className="text-xs opacity-70">{clase.aula}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr>
+                <th className="bg-gray-50 px-3 py-2 text-left text-gray-500 font-semibold border border-gray-100 w-28">Horario</th>
+                {diasPresentes.map(d => (
+                  <th key={d} className="bg-gray-50 px-3 py-2 text-center text-gray-700 font-semibold border border-gray-100">{DIAS[d] ?? d}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bloquesUnicos.map(bloque => (
+                <tr key={bloque}>
+                  <td className="bg-gray-50 px-3 py-2 text-gray-500 border border-gray-100 whitespace-nowrap font-medium">{getHora(bloque)}</td>
+                  {diasPresentes.map(dia => {
+                    const asig = getAsig(dia, bloque);
+                    const grupo = asig ? grupos?.find(g => g.id === asig.grupoId) : null;
+                    const docente = asig ? docentes?.find(d => d.id === asig.docenteId) : null;
+                    const aula = asig ? aulas?.find(a => a.id === asig.aulaId) : null;
+                    return (
+                      <td key={dia} className="border border-gray-100 p-1 align-top h-20 w-40">
+                        {asig ? (
+                          <div className="w-full h-full rounded-lg p-2 bg-blue-50 border-l-2 border-blue-400">
+                            <p className="font-semibold text-blue-900 truncate">{grupo?.cursoNombre ?? `Grupo ${asig.grupoId}`}</p>
+                            <p className="text-blue-700 truncate text-xs">{grupo?.codigo ?? ''}</p>
+                            <p className="text-blue-500 truncate text-xs">{(docente?.usuarioNombre ?? '').split(' ')[0]} - {aula?.codigo ?? ''}</p>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full rounded-lg border border-dashed border-gray-200" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
