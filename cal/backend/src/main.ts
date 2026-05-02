@@ -1,11 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModulo } from './app.modulo';
+import { LoggerJson } from './core/logger/logger-json';
 
 async function arrancar() {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModulo, { logger: ['error', 'warn', 'log'] });
+  const logger = new LoggerJson();
+  const app = await NestFactory.create(AppModulo, { logger });
+
+  app.use(helmet());
 
   app.setGlobalPrefix('api');
 
@@ -18,7 +22,7 @@ async function arrancar() {
   );
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: process.env.CORS_ORIGINS?.split(',') ?? 'http://localhost:3000',
     credentials: true,
   });
 
@@ -31,10 +35,10 @@ async function arrancar() {
   const documento = SwaggerModule.createDocument(app, configuracionSwagger);
   SwaggerModule.setup('api/docs', app, documento);
 
-  const puerto = process.env.PORT || 3000;
+  const puerto = process.env.PORT ?? 3000;
   await app.listen(puerto);
-  logger.log(`Servidor escuchando en http://localhost:${puerto}/api`);
-  logger.log(`Documentación en http://localhost:${puerto}/api/docs`);
+  logger.log(`Servidor en http://localhost:${puerto}/api`, 'Bootstrap');
+  logger.log(`Documentación en http://localhost:${puerto}/api/docs`, 'Bootstrap');
 }
 
 arrancar();

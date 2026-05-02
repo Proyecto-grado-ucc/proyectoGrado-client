@@ -28,3 +28,8 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Backend especifico
+cal/backend/node_modules/
+cal/backend/dist/
+cal/backend/.env
