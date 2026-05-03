@@ -9,7 +9,9 @@ interface Horario {
   asignaciones: Asignacion[]; fitness: number; generaciones: number; tiempoMs: number; creadoEn: string;
 }
 interface Franja { id: number; diaSemana: string; horaInicio: string; horaFin: string; bloqueIdx: number; }
-interface Grupo { id: number; codigo: string; cursoNombre: string; }
+interface Grupo { id: number; codigo: string; cursoNombre: string; cursoId: number; }
+interface Curso { id: number; nivelId: number; }
+interface Nivel { id: number; codigo: string; }
 interface Docente { id: number; usuarioNombre: string; usuarioEmail: string; }
 interface Aula { id: number; codigo: string; tipo: string; }
 
@@ -128,8 +130,9 @@ function DetalleAsignacion({ asig, grupos, docentes, aulas, onClose }: {
 }
 
 // ── Grilla semanal ─────────────────────────────────────────────────────────────
-function GrillaHorario({ horario, franjas, grupos, docentes, aulas, filtroDocente, filtroAula }: {
+function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, niveles, filtroDocente, filtroAula }: {
   horario: Horario; franjas: Franja[]; grupos: Grupo[]; docentes: Docente[]; aulas: Aula[];
+  cursos: Curso[]; niveles: Nivel[];
   filtroDocente: string; filtroAula: string;
 }) {
   const [detalle, setDetalle] = useState<Asignacion | null>(null);
@@ -149,9 +152,10 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, filtroDocent
   };
 
   const getColor = (asig: Asignacion) => {
-    const g = grupos.find(gr => gr.id === asig.grupoId);
-    const nivel = g?.cursoNombre.match(/[ABC]\d/)?.[0] ?? '';
-    return NIVEL_COLOR[nivel] ?? '#6b7280';
+    const grupo = grupos.find(g => g.id === asig.grupoId);
+    const curso = cursos.find(c => c.id === grupo?.cursoId);
+    const nivel = niveles.find(n => n.id === curso?.nivelId);
+    return NIVEL_COLOR[nivel?.codigo ?? ''] ?? '#6b7280';
   };
 
   const getHora = (bloque: number) => {
@@ -232,6 +236,8 @@ export default function Horarios() {
   const { data: grupos } = useQuery({ queryKey: ['grupos-grid'], queryFn: () => fetchAll<Grupo>('/grupos') });
   const { data: docentes } = useQuery({ queryKey: ['docentes-grid'], queryFn: () => fetchAll<Docente>('/docentes') });
   const { data: aulas } = useQuery({ queryKey: ['aulas-grid'], queryFn: () => fetchAll<Aula>('/aulas') });
+  const { data: cursos } = useQuery({ queryKey: ['cursos-grid'], queryFn: () => fetchAll<Curso>('/cursos') });
+  const { data: niveles } = useQuery({ queryKey: ['niveles-grid'], queryFn: () => fetchAll<Nivel>('/niveles') });
 
   useEffect(() => {
     if (horarios && horarios.length > 0 && horarioSelId === null) setHorarioSelId(horarios[0].id);
@@ -243,7 +249,7 @@ export default function Horarios() {
   });
 
   const horarioActual = horarios?.find(h => h.id === horarioSelId);
-  const tieneData = franjas && grupos && docentes && aulas && horarioDetalle;
+  const tieneData = franjas && grupos && docentes && aulas && cursos && niveles && horarioDetalle;
 
   return (
     <div className="p-8 min-h-full bg-gray-50">
@@ -334,7 +340,7 @@ export default function Horarios() {
         ) : cargandoDetalle ? (
           <div className="p-12 text-center text-gray-400 text-sm animate-pulse">Cargando detalle...</div>
         ) : tieneData ? (
-          <GrillaHorario horario={horarioDetalle} franjas={franjas} grupos={grupos} docentes={docentes} aulas={aulas} filtroDocente={filtroDocente} filtroAula={filtroAula} />
+          <GrillaHorario horario={horarioDetalle} franjas={franjas} grupos={grupos} docentes={docentes} aulas={aulas} cursos={cursos} niveles={niveles} filtroDocente={filtroDocente} filtroAula={filtroAula} />
         ) : null}
       </div>
     </div>

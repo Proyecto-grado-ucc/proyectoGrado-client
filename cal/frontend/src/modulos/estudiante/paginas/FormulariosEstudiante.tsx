@@ -1,34 +1,58 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
+import { useAuthStore } from '../../../seguridad/store';
 
+interface Estudiante { id: number; usuarioEmail: string; grupoId: number; }
+interface Asignacion { grupoId: number; docenteId: number; }
+interface Horario { id: number; periodoNombre: string; asignaciones: Asignacion[]; }
 interface Pregunta { id: number; texto: string; tipo: 'likert' | 'texto'; }
 interface Dimension { id: number; nombre: string; preguntas: Pregunta[]; }
 interface Formulario { id: number; titulo: string; descripcion: string; dimensiones: Dimension[]; }
 interface Evaluacion { id: number; formularioId: number; formularioTitulo: string; docenteEvaluadoId: number; docenteEvaluadoNombre: string; estado: string; }
 
+const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
+  const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 200 } });
+  return (data.items ?? data) as T[];
+};
+
 export default function FormulariosEstudiante() {
   const qc = useQueryClient();
+  const email = useAuthStore(s => s.usuario?.email ?? '');
+  
   const [evaluacionActiva, setEvaluacionActiva] = useState<Evaluacion | null>(null);
   const [respuestas, setRespuestas] = useState<Record<number, string | number>>({});
   const [enviando, setEnviando] = useState(false);
 
-  // 1. Obtener evaluaciones del estudiante
-  const { data: evaluaciones = [], isLoading: cargandoEvals } = useQuery({
-    queryKey: ['mis-evaluaciones'],
+  const { data: estudiantes } = useQuery({ queryKey: ['estudiantes-fe'], queryFn: () => fetchAll<Estudiante>('/estudiantes') });
+  const miEstudiante = estudiantes?.find(e => e.usuarioEmail === email);
+  const miGrupoId = miEstudiante?.grupoId;
+
+  const { data: horarios } = useQuery({ queryKey: ['horarios-fe'], queryFn: () => fetchAll<Horario>('/horarios') });
+  const horarioActivoResumen = horarios?.[0];
+
+  const { data: horarioDetalle } = useQuery({
+    queryKey: ['horario-detalle-fe', horarioActivoResumen?.id],
     queryFn: async () => {
-      try {
-        const { data } = await clienteApi.get('/evaluaciones/estudiante/mis-evaluaciones');
-        return data as Evaluacion[];
-      } catch {
-        return [];
-      }
-    }
+      const { data } = await clienteApi.get(`/horarios/${horarioActivoResumen!.id}`);
+      return data as Horario;
+    },
+    enabled: !!horarioActivoResumen
   });
 
-  // 2. Obtener detalles del formulario activo
+  const { data: evaluacionesTodas = [], isLoading: cargandoEvals } = useQuery({
+    queryKey: ['evaluaciones-fe'],
+    queryFn: () => fetchAll<Evaluacion>('/evaluaciones')
+  });
+
+  const misAsignaciones = horarioDetalle?.asignaciones?.filter(a => a.grupoId === miGrupoId) ?? [];
+  const docentesDeMiGrupo = new Set(misAsignaciones.map(a => a.docenteId));
+
+  const evaluaciones = evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId) && (e.estado === 'PENDIENTE' || e.estado === 'COMPLETADA' || e.estado === 'ACTIVA'));
+  const pendientes = evaluaciones.filter(e => e.estado === 'PENDIENTE' || e.estado === 'ACTIVA');
+
   const { data: formularioActivo, isLoading: cargandoForm } = useQuery({
-    queryKey: ['formulario', evaluacionActiva?.formularioId],
+    queryKey: ['formulario-fe', evaluacionActiva?.formularioId],
     queryFn: async () => {
       if (!evaluacionActiva) return null;
       const { data } = await clienteApi.get(`/formularios/${evaluacionActiva.formularioId}`);
@@ -36,8 +60,6 @@ export default function FormulariosEstudiante() {
     },
     enabled: !!evaluacionActiva
   });
-
-  const pendientes = evaluaciones.filter(e => e.estado === 'PENDIENTE');
 
   const responder = (preguntaId: number, valor: string | number) => {
     setRespuestas(prev => ({ ...prev, [preguntaId]: valor }));
@@ -47,7 +69,6 @@ export default function FormulariosEstudiante() {
     if (!evaluacionActiva || !formularioActivo) return;
     setEnviando(true);
     try {
-      // Enviar cada respuesta al backend
       const promesas = Object.entries(respuestas).map(([pId, val]) => {
         const esNum = typeof val === 'number';
         return clienteApi.post('/respuestas', {
@@ -58,12 +79,8 @@ export default function FormulariosEstudiante() {
         });
       });
       await Promise.all(promesas);
-
-      // Marcar evaluacion como completada
       await clienteApi.patch(`/evaluaciones/${evaluacionActiva.id}`, { estado: 'COMPLETADA' });
-
-      // Refresh
-      qc.invalidateQueries({ queryKey: ['mis-evaluaciones'] });
+      qc.invalidateQueries({ queryKey: ['evaluaciones-fe'] });
       setEvaluacionActiva(null);
       setRespuestas({});
       alert('Evaluación enviada con éxito. ¡Gracias!');
@@ -75,7 +92,6 @@ export default function FormulariosEstudiante() {
     }
   };
 
-  // Validar que todas las preguntas Likert esten respondidas
   const esCompleta = formularioActivo?.dimensiones.every(dim => 
     dim.preguntas.filter(p => p.tipo === 'likert').every(p => respuestas[p.id] !== undefined)
   ) ?? false;
@@ -84,7 +100,6 @@ export default function FormulariosEstudiante() {
     return <div className="p-8 text-center text-gray-500">Cargando evaluaciones...</div>;
   }
 
-  // VISTA 1: LISTA DE EVALUACIONES PENDIENTES
   if (!evaluacionActiva) {
     return (
       <div className="p-8 min-h-full bg-gray-50">
@@ -141,7 +156,6 @@ export default function FormulariosEstudiante() {
     );
   }
 
-  // VISTA 2: FORMULARIO ACTIVO
   return (
     <div className="p-8 min-h-full bg-gray-50">
       <div className="mb-6 flex items-start justify-between">
@@ -150,10 +164,6 @@ export default function FormulariosEstudiante() {
           <h1 className="text-2xl font-bold text-gray-900">Evaluando a: {evaluacionActiva.docenteEvaluadoNombre}</h1>
           <p className="text-gray-500 text-sm mt-0.5">{evaluacionActiva.formularioTitulo}</p>
         </div>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 mb-6">
-        <strong>Aviso de Privacidad:</strong> Tus respuestas son 100% anónimas y no afectarán tus calificaciones. Sé honesto para ayudarnos a mejorar.
       </div>
 
       {cargandoForm ? (

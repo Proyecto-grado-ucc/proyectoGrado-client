@@ -2,26 +2,17 @@ import { useQuery } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
 import { useAuthStore } from '../../../seguridad/store';
 
-interface Evaluacion { id: number; docenteEvaluadoId: number; docenteEvaluadoNombre: string; formularioTitulo: string; formularioId: number; estado: string; creadoEn: string; }
+interface Estudiante { id: number; usuarioEmail: string; grupoId: number; }
+interface Evaluacion { id: number; docenteEvaluadoId: number; docenteEvaluadoNombre: string; formularioTitulo: string; formularioId: number; estado: string; grupoId?: number; creadoEn: string; }
 interface Horario { id: number; periodoNombre: string; asignaciones: { grupoId: number; docenteId: number; aulaId: number; franjaId: number; }[]; }
 interface Franja { id: number; diaSemana: string; horaInicio: string; horaFin: string; }
 interface Grupo { id: number; codigo: string; cursoNombre: string; }
 interface Docente { id: number; usuarioNombre: string; usuarioEmail: string; }
 interface Aula { id: number; codigo: string; }
 
-
 const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
   const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 200 } });
   return (data.items ?? data) as T[];
-};
-
-const fetchSafe = async <T extends object>(ruta: string): Promise<T[]> => {
-  try {
-    const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 200 } });
-    return (data.items ?? data) as T[];
-  } catch {
-    return [];
-  }
 };
 
 const DIAS: Record<string, string> = { LUN: 'Lun', MAR: 'Mar', MIE: 'Mie', JUE: 'Jue', VIE: 'Vie', SAB: 'Sab' };
@@ -29,34 +20,42 @@ const DIAS: Record<string, string> = { LUN: 'Lun', MAR: 'Mar', MIE: 'Mie', JUE: 
 export default function DashboardEstudiante() {
   const email = useAuthStore(s => s.usuario?.email ?? '');
 
-  // Usamos el endpoint correcto y exclusivo de estudiante para evitar vacíos por permisos
-  const { data: evaluaciones = [] } = useQuery({ 
-    queryKey: ['ev-est'], 
-    queryFn: () => fetchSafe<Evaluacion>('/evaluaciones/estudiante/mis-evaluaciones') 
+  const { data: estudiantes } = useQuery({ queryKey: ['estudiantes-de'], queryFn: () => fetchAll<Estudiante>('/estudiantes') });
+  const miEstudiante = estudiantes?.find(e => e.usuarioEmail === email);
+  const miGrupoId = miEstudiante?.grupoId;
+
+  const { data: evaluacionesTodas = [] } = useQuery({ 
+    queryKey: ['evaluaciones-de'], 
+    queryFn: () => fetchAll<Evaluacion>('/evaluaciones') 
   });
   
-  // Para ver su horario, usamos el endpoint de estudiante en vez del global (que mostraría todos o requiere admin)
+  const { data: horarios } = useQuery({ queryKey: ['horarios-de'], queryFn: () => fetchAll<Horario>('/horarios') });
+  const horarioActivoResumen = horarios?.[0];
+
   const { data: miHorario } = useQuery<Horario | null>({ 
-    queryKey: ['hor-est-activo'], 
+    queryKey: ['horario-detalle-de', horarioActivoResumen?.id], 
     queryFn: async () => {
-      try {
-        const { data } = await clienteApi.get('/horarios/estudiante/mi-horario');
-        return data as Horario;
-      } catch {
-        return null;
-      }
-    }
+      if (!horarioActivoResumen) return null;
+      const { data } = await clienteApi.get(`/horarios/${horarioActivoResumen.id}`);
+      return data as Horario;
+    },
+    enabled: !!horarioActivoResumen
   });
 
-  const { data: franjas } = useQuery({ queryKey: ['fran-est'], queryFn: () => fetchAll<Franja>('/franjas-horarias') });
-  const { data: grupos } = useQuery({ queryKey: ['grup-est'], queryFn: () => fetchAll<Grupo>('/grupos') });
-  const { data: docentes } = useQuery({ queryKey: ['doc-est'], queryFn: () => fetchAll<Docente>('/docentes') });
-  const { data: aulas } = useQuery({ queryKey: ['aul-est'], queryFn: () => fetchAll<Aula>('/aulas') });
+  const { data: franjas } = useQuery({ queryKey: ['franjas-de'], queryFn: () => fetchAll<Franja>('/franjas-horarias') });
+  const { data: grupos } = useQuery({ queryKey: ['grupos-de'], queryFn: () => fetchAll<Grupo>('/grupos') });
+  const { data: docentes } = useQuery({ queryKey: ['docentes-de'], queryFn: () => fetchAll<Docente>('/docentes') });
+  const { data: aulas } = useQuery({ queryKey: ['aulas-de'], queryFn: () => fetchAll<Aula>('/aulas') });
 
-  const pendientes = evaluaciones.filter(e => e.estado === 'PENDIENTE');
+  const misAsignaciones = miHorario?.asignaciones?.filter(a => a.grupoId === miGrupoId) ?? [];
+  const docentesDeMiGrupo = new Set(misAsignaciones.map(a => a.docenteId));
 
-  // Próximas clases (primeras 4 asignaciones de su horario actual)
-  const proximasClases = (miHorario?.asignaciones ?? []).slice(0, 4).map(a => {
+  const misEvaluaciones = evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId));
+  const pendientes = misEvaluaciones.filter(e => e.estado === 'PENDIENTE');
+
+  const miGrupo = grupos?.find(g => g.id === miGrupoId);
+
+  const proximasClases = misAsignaciones.slice(0, 4).map(a => {
     const franja = franjas?.find(f => f.id === a.franjaId);
     const grupo = grupos?.find(g => g.id === a.grupoId);
     const docente = docentes?.find(d => d.id === a.docenteId);
@@ -73,9 +72,9 @@ export default function DashboardEstudiante() {
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 mb-1">Periodo activo</p>
-          <p className="text-xl font-bold text-gray-900">{miHorario?.periodoNombre ?? '-'}</p>
-          <p className="text-xs text-gray-400 mt-1">{miHorario ? 'Inscrito y activo' : 'No inscrito aún'}</p>
+          <p className="text-xs text-gray-500 mb-1">Mi Grupo</p>
+          <p className="text-xl font-bold text-gray-900">{miGrupo?.cursoNombre ?? '-'}</p>
+          <p className="text-xs text-gray-400 mt-1">{miGrupo?.codigo ?? 'No asignado'}</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500 mb-1">Evaluaciones pendientes</p>
@@ -84,7 +83,7 @@ export default function DashboardEstudiante() {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500 mb-1">Clases semanales</p>
-          <p className="text-3xl font-bold text-gray-900">{miHorario?.asignaciones.length ?? 0}</p>
+          <p className="text-3xl font-bold text-gray-900">{misAsignaciones.length ?? 0}</p>
           <div className="mt-2 h-1 bg-blue-500 rounded-full w-2/3" />
         </div>
       </div>

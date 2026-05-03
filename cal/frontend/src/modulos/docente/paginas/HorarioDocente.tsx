@@ -6,7 +6,9 @@ interface Docente { id: number; usuarioNombre: string; usuarioEmail: string; }
 interface Asignacion { grupoId: number; docenteId: number; aulaId: number; franjaId: number; }
 interface Horario { id: number; periodoNombre: string; asignaciones: Asignacion[]; }
 interface Franja { id: number; diaSemana: string; horaInicio: string; horaFin: string; bloqueIdx: number; }
-interface Grupo { id: number; codigo: string; cursoNombre: string; }
+interface Grupo { id: number; codigo: string; cursoNombre: string; cursoId: number; }
+interface Curso { id: number; nivelId: number; }
+interface Nivel { id: number; codigo: string; }
 interface Aula { id: number; codigo: string; tipo: string; }
 
 const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
@@ -31,10 +33,23 @@ export default function HorarioDocente() {
   const { data: franjas } = useQuery({ queryKey: ['franjas-hd'], queryFn: () => fetchAll<Franja>('/franjas-horarias') });
   const { data: grupos } = useQuery({ queryKey: ['grupos-hd'], queryFn: () => fetchAll<Grupo>('/grupos') });
   const { data: aulas } = useQuery({ queryKey: ['aulas-hd'], queryFn: () => fetchAll<Aula>('/aulas') });
+  const { data: cursos } = useQuery({ queryKey: ['cursos-hd'], queryFn: () => fetchAll<Curso>('/cursos') });
+  const { data: niveles } = useQuery({ queryKey: ['niveles-hd'], queryFn: () => fetchAll<Nivel>('/niveles') });
 
   const miDocente = docentes?.find(d => d.usuarioEmail === email);
-  const horarioActivo = horarios?.[0];
-  const misAsignaciones = horarioActivo?.asignaciones.filter(a => a.docenteId === miDocente?.id) ?? [];
+  const horarioActivoResumen = horarios?.[0];
+
+  const { data: horarioDetalle } = useQuery({
+    queryKey: ['horario-detalle', horarioActivoResumen?.id],
+    queryFn: async () => {
+      const { data } = await clienteApi.get(`/horarios/${horarioActivoResumen!.id}`);
+      return data as Horario;
+    },
+    enabled: !!horarioActivoResumen
+  });
+
+  const horarioActivo = horarioDetalle ?? horarioActivoResumen;
+  const misAsignaciones = horarioActivo?.asignaciones?.filter(a => a.docenteId === miDocente?.id) ?? [];
 
   const diasPresentes = [...new Set(
     misAsignaciones
@@ -60,9 +75,10 @@ export default function HorarioDocente() {
   };
 
   const getColor = (asig: Asignacion) => {
-    const g = grupos?.find(gr => gr.id === asig.grupoId);
-    const nivel = g?.cursoNombre.match(/[ABC]\d/)?.[0] ?? '';
-    return NIVEL_COLOR[nivel] ?? '#6b7280';
+    const grupo = grupos?.find(g => g.id === asig.grupoId);
+    const curso = cursos?.find(c => c.id === grupo?.cursoId);
+    const nivel = niveles?.find(n => n.id === curso?.nivelId);
+    return NIVEL_COLOR[nivel?.codigo ?? ''] ?? '#6b7280';
   };
 
   const subtitulo = horarioActivo
