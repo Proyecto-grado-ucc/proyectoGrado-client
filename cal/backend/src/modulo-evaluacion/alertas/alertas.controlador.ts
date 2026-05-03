@@ -19,10 +19,11 @@ export class AlertasControlador {
   @ApiQuery({ name: 'periodoId', required: false, type: Number })
   @ApiResponse({ status: 200, type: [RespuestaAlertaDto] })
   listar(
-    @Query('periodoId', new ParseIntPipe({ optional: true })) periodoId?: number,
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('size', new ParseIntPipe({ optional: true })) size?: number,
+    @Query('periodoId') periodoIdStr?: string,
+    @Query('page') pageStr?: string,
+    @Query('size') sizeStr?: string,
   ): Promise<RespuestaAlertaDto[]> {
+    const periodoId = periodoIdStr ? parseInt(periodoIdStr, 10) : undefined;
     return this.alertasServicio.listar(periodoId);
   }
 
