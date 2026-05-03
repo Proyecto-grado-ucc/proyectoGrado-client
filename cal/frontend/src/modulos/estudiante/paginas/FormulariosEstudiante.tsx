@@ -6,7 +6,7 @@ import { useAuthStore } from '../../../seguridad/store';
 interface Estudiante { id: number; usuarioEmail: string; grupoId: number; }
 interface Asignacion { grupoId: number; docenteId: number; }
 interface Horario { id: number; periodoNombre: string; asignaciones: Asignacion[]; }
-interface Pregunta { id: number; texto: string; tipo: 'likert' | 'texto'; }
+interface Pregunta { id: number; texto: string; tipo: 'ESCALA' | 'ABIERTA' | 'OPCION_MULTIPLE'; }
 interface Dimension { id: number; nombre: string; preguntas: Pregunta[]; }
 interface Formulario { id: number; titulo: string; descripcion: string; dimensiones: Dimension[]; }
 interface Evaluacion { id: number; formularioId: number; formularioTitulo: string; docenteEvaluadoId: number; docenteEvaluadoNombre: string; estado: string; }
@@ -93,7 +93,7 @@ export default function FormulariosEstudiante() {
   };
 
   const esCompleta = formularioActivo?.dimensiones.every(dim => 
-    dim.preguntas.filter(p => p.tipo === 'likert').every(p => respuestas[p.id] !== undefined)
+    dim.preguntas.filter(p => p.tipo === 'ESCALA').every(p => respuestas[p.id] !== undefined)
   ) ?? false;
 
   if (cargandoEvals) {
@@ -181,7 +181,7 @@ export default function FormulariosEstudiante() {
                 {dim.preguntas.map(p => (
                   <div key={p.id}>
                     <p className="text-sm font-medium text-gray-800 mb-3">{p.texto}</p>
-                    {p.tipo === 'likert' ? (
+                    {p.tipo === 'ESCALA' ? (
                       <div className="flex flex-wrap gap-2 md:gap-4 items-center">
                         <span className="text-xs text-gray-400 w-full md:w-auto">Totalmente en desacuerdo</span>
                         {[1, 2, 3, 4, 5].map(v => (

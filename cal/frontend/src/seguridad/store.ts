@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import type { UsuarioAutenticado } from './tipos';
 
 interface EstadoAuth {
@@ -11,7 +11,12 @@ interface EstadoAuth {
 }
 
 export const useAuthStore = create<EstadoAuth>((set) => ({
-  usuario: null,
+  usuario: (() => {
+    try {
+      const u = localStorage.getItem('usuario');
+      return u ? JSON.parse(u) : null;
+    } catch { return null; }
+  })(),
   token: localStorage.getItem('token_acceso'),
   tokenRefresco: localStorage.getItem('token_refresco'),
   estaAutenticado: !!localStorage.getItem('token_acceso'),
@@ -19,12 +24,15 @@ export const useAuthStore = create<EstadoAuth>((set) => ({
   iniciarSesion: (token, tokenRefresco, rol, email) => {
     localStorage.setItem('token_acceso', token);
     localStorage.setItem('token_refresco', tokenRefresco);
-    set({ token, tokenRefresco, estaAutenticado: true, usuario: { email, rol } });
+    const userObj = { email, rol };
+    localStorage.setItem('usuario', JSON.stringify(userObj));
+    set({ token, tokenRefresco, estaAutenticado: true, usuario: userObj });
   },
 
   cerrarSesion: () => {
     localStorage.removeItem('token_acceso');
     localStorage.removeItem('token_refresco');
+    localStorage.removeItem('usuario');
     set({ token: null, tokenRefresco: null, estaAutenticado: false, usuario: null });
   },
 }));
