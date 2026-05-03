@@ -17,4 +17,8 @@ export class CrearFormularioDto {
   @ApiProperty({ default: true, required: false })
   @IsBoolean() @IsOptional()
   activo?: boolean;
+
+  @ApiProperty({ example: 'DESEMPENO', required: false })
+  @IsString() @IsOptional()
+  tipoEvaluacion?: string;
 }

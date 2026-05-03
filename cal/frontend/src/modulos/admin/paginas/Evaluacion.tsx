@@ -41,7 +41,7 @@ const nivelBadge: Record<string, string> = {
 function TabFormularios() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ titulo: '', periodoId: '' });
+  const [form, setForm] = useState({ titulo: '', periodoId: '', tipoEvaluacion: 'DESEMPENO' });
   const [err, setErr] = useState('');
 
   const { data: formularios, isLoading } = useQuery({
@@ -54,11 +54,11 @@ function TabFormularios() {
   });
 
   const mutCrear = useMutation({
-    mutationFn: () => api.post('/formularios', { titulo: form.titulo, periodoId: Number(form.periodoId), activo: true }),
+    mutationFn: () => api.post('/formularios', { titulo: form.titulo, periodoId: Number(form.periodoId), activo: true, tipoEvaluacion: form.tipoEvaluacion }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['formularios'] });
       setModal(false);
-      setForm({ titulo: '', periodoId: '' });
+      setForm({ titulo: '', periodoId: '', tipoEvaluacion: 'DESEMPENO' });
       setErr('');
     },
     onError: (e: unknown) => setErr(errMsg(e)),
@@ -145,6 +145,17 @@ function TabFormularios() {
                 >
                   <option value="">Seleccionar...</option>
                   {periodos?.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de evaluación</label>
+                <select
+                  value={form.tipoEvaluacion}
+                  onChange={e => setForm({ ...form, tipoEvaluacion: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="DESEMPENO">Desempeño Docente (Predeterminada)</option>
+                  <option value="">Personalizada (Vacía)</option>
                 </select>
               </div>
               {err && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{err}</p>}
