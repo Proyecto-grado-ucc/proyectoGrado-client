@@ -17,6 +17,16 @@ const fetchAll = async <T extends object>(ruta: string, size = 200): Promise<T[]
   return (data.items ?? data) as T[];
 };
 
+// Fetch que no lanza error en 403 — retorna array vacio para docentes sin acceso
+const fetchSafe = async <T extends object>(ruta: string, params?: Record<string, unknown>): Promise<T[]> => {
+  try {
+    const { data } = await clienteApi.get(ruta, { params });
+    return (data.items ?? data) as T[];
+  } catch {
+    return [];
+  }
+};
+
 const DIAS: Record<string, string> = { LUN: 'Lunes', MAR: 'Martes', MIE: 'Miercoles', JUE: 'Jueves', VIE: 'Viernes', SAB: 'Sabado' };
 
 export default function DashboardDocente() {
@@ -29,23 +39,27 @@ export default function DashboardDocente() {
   const { data: franjas } = useQuery({ queryKey: ['franjas-dash'], queryFn: () => fetchAll<Franja>('/franjas-horarias') });
   const { data: grupos } = useQuery({ queryKey: ['grupos-dash'], queryFn: () => fetchAll<Grupo>('/grupos') });
   const { data: aulas } = useQuery({ queryKey: ['aulas-dash'], queryFn: () => fetchAll<Aula>('/aulas') });
-  const { data: evaluaciones } = useQuery({ queryKey: ['evaluaciones-dash'], queryFn: () => fetchAll<Evaluacion>('/evaluaciones') });
+
+  // Evaluaciones y KDD usan fetchSafe — si devuelven 403, retornan array vacio sin cerrar sesion
+  const { data: evaluaciones = [] } = useQuery({
+    queryKey: ['evaluaciones-dash'],
+    queryFn: () => fetchSafe<Evaluacion>('/evaluaciones'),
+  });
 
   useEffect(() => {
     if (periodos && periodos.length > 0 && periodoId === null) setPeriodoId(periodos[0].id);
   }, [periodos]);
 
-  const { data: resultados } = useQuery({
+  const { data: resultados = [] } = useQuery({
     queryKey: ['kdd-dash', periodoId],
-    queryFn: () => clienteApi.get('/kdd/resultados', { params: { periodoId } }).then(r => r.data as ResultadoKdd[]),
+    queryFn: () => fetchSafe<ResultadoKdd>('/kdd/resultados', { periodoId }),
     enabled: periodoId !== null,
   });
 
   const miDocente = docentes?.find(d => d.usuarioEmail === email);
-  const miResultado = resultados?.find(r => r.docenteId === miDocente?.id);
-  const misEvaluaciones = evaluaciones?.filter(e => e.docenteEvaluadoId === miDocente?.id) ?? [];
+  const miResultado = resultados.find(r => r.docenteId === miDocente?.id);
+  const misEvaluaciones = evaluaciones.filter(e => e.docenteEvaluadoId === miDocente?.id);
 
-  // Calcular clases de esta semana desde el horario
   const horarioActivo = horarios?.[0];
   const misAsignaciones = horarioActivo?.asignaciones.filter(a => a.docenteId === miDocente?.id) ?? [];
 
@@ -82,7 +96,9 @@ export default function DashboardDocente() {
       <div className="grid grid-cols-2 gap-4">
         {/* Horario semanal resumido */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Mi horario — {horarioActivo?.periodoNombre ?? 'Sin horario'}</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">
+            Mi horario — {horarioActivo?.periodoNombre ?? 'Sin horario'}
+          </h2>
           {misAsignaciones.length === 0 ? (
             <p className="text-sm text-gray-400">Sin asignaciones en el horario activo.</p>
           ) : (
@@ -94,10 +110,16 @@ export default function DashboardDocente() {
                 return (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50">
                     <div>
-                      <p className="text-xs font-medium text-gray-800">{grupo?.cursoNombre ?? `Grupo ${a.grupoId}`} — {grupo?.codigo ?? ''}</p>
-                      <p className="text-xs text-gray-400">{DIAS[franja?.diaSemana ?? ''] ?? franja?.diaSemana} {franja?.horaInicio?.substring(0, 5)}-{franja?.horaFin?.substring(0, 5)}</p>
+                      <p className="text-xs font-medium text-gray-800">
+                        {grupo?.cursoNombre ?? `Grupo ${a.grupoId}`} - {grupo?.codigo ?? ''}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {DIAS[franja?.diaSemana ?? ''] ?? franja?.diaSemana} {franja?.horaInicio?.substring(0, 5)}-{franja?.horaFin?.substring(0, 5)}
+                      </p>
                     </div>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{aula?.codigo ?? `Aula ${a.aulaId}`}</span>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                      {aula?.codigo ?? `Aula ${a.aulaId}`}
+                    </span>
                   </div>
                 );
               })}
@@ -109,8 +131,11 @@ export default function DashboardDocente() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">Mi evaluacion</h2>
-            <select value={periodoId ?? ''} onChange={e => setPeriodoId(Number(e.target.value))}
-              className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none">
+            <select
+              value={periodoId ?? ''}
+              onChange={e => setPeriodoId(Number(e.target.value))}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none"
+            >
               {periodos?.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
             </select>
           </div>

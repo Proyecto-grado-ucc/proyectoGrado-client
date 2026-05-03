@@ -13,6 +13,15 @@ const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
   return (data.items ?? data) as T[];
 };
 
+const fetchSafe = async <T extends object>(ruta: string, params?: Record<string, unknown>): Promise<T[]> => {
+  try {
+    const { data } = await clienteApi.get(ruta, { params });
+    return (data.items ?? data) as T[];
+  } catch {
+    return [];
+  }
+};
+
 const scoreColor = (v: number) => v >= 4 ? '#10b981' : v >= 3 ? '#f59e0b' : '#ef4444';
 const estadoBadge: Record<string, string> = {
   PENDIENTE: 'bg-gray-100 text-gray-600',
@@ -26,21 +35,21 @@ export default function EvaluacionDocente() {
 
   const { data: docentes } = useQuery({ queryKey: ['docentes-ed'], queryFn: () => fetchAll<Docente>('/docentes') });
   const { data: periodos } = useQuery({ queryKey: ['periodos-ed'], queryFn: () => fetchAll<Periodo>('/periodos') });
-  const { data: evaluaciones } = useQuery({ queryKey: ['evaluaciones-ed'], queryFn: () => fetchAll<Evaluacion>('/evaluaciones') });
+  const { data: evaluaciones = [] } = useQuery({ queryKey: ['evaluaciones-ed'], queryFn: () => fetchSafe<Evaluacion>('/evaluaciones') });
 
   useEffect(() => {
     if (periodos && periodos.length > 0 && periodoId === null) setPeriodoId(periodos[0].id);
   }, [periodos]);
 
-  const { data: resultados } = useQuery({
+  const { data: resultados = [] } = useQuery({
     queryKey: ['kdd-ed', periodoId],
-    queryFn: () => clienteApi.get('/kdd/resultados', { params: { periodoId } }).then(r => r.data as ResultadoKdd[]),
+    queryFn: () => fetchSafe<ResultadoKdd>('/kdd/resultados', { periodoId }),
     enabled: periodoId !== null,
   });
 
   const miDocente = docentes?.find(d => d.usuarioEmail === email);
-  const miResultado = resultados?.find(r => r.docenteId === miDocente?.id);
-  const misEvaluaciones = evaluaciones?.filter(e => e.docenteEvaluadoId === miDocente?.id) ?? [];
+  const miResultado = resultados.find(r => r.docenteId === miDocente?.id);
+  const misEvaluaciones = evaluaciones.filter(e => e.docenteEvaluadoId === miDocente?.id);
 
   return (
     <div className="p-8 min-h-full bg-gray-50">

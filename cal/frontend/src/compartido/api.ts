@@ -12,15 +12,15 @@ clienteApi.interceptors.request.use((config) => {
   return config;
 });
 
-// Response: on 401/403 clear tokens and redirect to login
+// Response: ONLY on 401 (token expired/invalid) clear session and redirect.
+// 403 = valid token but insufficient role — DO NOT logout, let components handle it.
 clienteApi.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     const status = (error as { response?: { status?: number } })?.response?.status;
-    if (status === 401 || status === 403) {
+    if (status === 401) {
       localStorage.removeItem('token_acceso');
       localStorage.removeItem('token_refresco');
-      // Redirect to login only if not already there
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }

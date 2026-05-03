@@ -15,12 +15,21 @@ const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
   return (data.items ?? data) as T[];
 };
 
+const fetchSafe = async <T extends object>(ruta: string): Promise<T[]> => {
+  try {
+    const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 200 } });
+    return (data.items ?? data) as T[];
+  } catch {
+    return [];
+  }
+};
+
 const DIAS: Record<string, string> = { LUN: 'Lun', MAR: 'Mar', MIE: 'Mie', JUE: 'Jue', VIE: 'Vie', SAB: 'Sab' };
 
 export default function DashboardEstudiante() {
   const email = useAuthStore(s => s.usuario?.email ?? '');
 
-  const { data: evaluaciones } = useQuery({ queryKey: ['ev-est'], queryFn: () => fetchAll<Evaluacion>('/evaluaciones') });
+  const { data: evaluaciones = [] } = useQuery({ queryKey: ['ev-est'], queryFn: () => fetchSafe<Evaluacion>('/evaluaciones') });
   const { data: horarios } = useQuery({ queryKey: ['hor-est'], queryFn: () => fetchAll<Horario>('/horarios') });
   const { data: franjas } = useQuery({ queryKey: ['fran-est'], queryFn: () => fetchAll<Franja>('/franjas-horarias') });
   const { data: grupos } = useQuery({ queryKey: ['grup-est'], queryFn: () => fetchAll<Grupo>('/grupos') });
@@ -29,7 +38,7 @@ export default function DashboardEstudiante() {
   const { data: periodos } = useQuery({ queryKey: ['per-est'], queryFn: () => fetchAll<Periodo>('/periodos') });
 
   // Evaluaciones pendientes (todas las asignadas - en una implementacion completa se filtraria por grupo del estudiante)
-  const pendientes = evaluaciones?.filter(e => e.estado === 'PENDIENTE') ?? [];
+  const pendientes = evaluaciones.filter(e => e.estado === 'PENDIENTE');
   const horarioActivo = horarios?.[0];
   const periodoActivo = periodos?.[0];
 
