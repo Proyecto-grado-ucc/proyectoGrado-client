@@ -13,6 +13,7 @@ import { Sesion } from './entidades/sesion.entidad';
 import { Usuario } from './entidades/usuario.entidad';
 import { AuthServicio } from './auth/auth.servicio';
 import { AuthControlador } from './auth/auth.controlador';
+import { CorreoServicio } from './auth/correo.servicio';
 import { JwtEstrategia } from './auth/estrategias/jwt.estrategia';
 import { JwtGuardia } from './auth/guardias/jwt.guardia';
 import { RolesGuardia } from './auth/guardias/roles.guardia';
@@ -38,6 +39,7 @@ import { AuditarInterceptor } from './decoradores/auditar.interceptor';
   ],
   providers: [
     AuthServicio,
+    CorreoServicio,
     UsuariosServicio,
     AuditLogServicio,
     JwtEstrategia,
@@ -46,7 +48,7 @@ import { AuditarInterceptor } from './decoradores/auditar.interceptor';
     { provide: APP_INTERCEPTOR, useClass: AuditarInterceptor },
   ],
   controllers: [AuthControlador, UsuariosControlador, AuditLogControlador],
-  exports: [AuthServicio, UsuariosServicio, AuditLogServicio, JwtGuardia, RolesGuardia],
+  exports: [AuthServicio, CorreoServicio, UsuariosServicio, AuditLogServicio, JwtGuardia, RolesGuardia],
 })
 export class SeguridadModulo implements OnModuleInit {
   private readonly logger = new Logger(SeguridadModulo.name);

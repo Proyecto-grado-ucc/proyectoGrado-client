@@ -33,6 +33,13 @@ export class Usuario {
   @CreateDateColumn({ name: 'fecha_creacion', type: 'timestamptz' })
   fechaCreacion: Date;
 
+  // Recuperacion de contrasena
+  @Column({ type: 'varchar', length: 255, name: 'reset_token', nullable: true, select: false })
+  resetToken: string | null;
+
+  @Column({ type: 'timestamptz', name: 'reset_token_expiry', nullable: true, select: false })
+  resetTokenExpiry: Date | null;
+
   @OneToMany('Sesion', 'usuario')
   sesiones: unknown[];
 }

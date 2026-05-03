@@ -1,9 +1,10 @@
-﻿import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAuthStore } from './seguridad/store';
 import TransicionPagina from './compartido/TransicionPagina';
 import Login from './seguridad/paginas/Login';
 import RecuperarContrasena from './seguridad/paginas/RecuperarContrasena';
+import RestablecerContrasena from './seguridad/paginas/RestablecerContrasena';
 import Inicio from './paginas/Inicio';
 import LayoutAdmin from './modulos/admin/layout/LayoutAdmin';
 import Dashboard from './modulos/admin/paginas/Dashboard';
@@ -34,6 +35,7 @@ function RutasAnimadas() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<TransicionPagina><Login /></TransicionPagina>} />
         <Route path="/recuperar-contrasena" element={<TransicionPagina><RecuperarContrasena /></TransicionPagina>} />
+        <Route path="/restablecer-contrasena" element={<TransicionPagina><RestablecerContrasena /></TransicionPagina>} />
 
         <Route path="/admin" element={<RutaProtegida><LayoutAdmin /></RutaProtegida>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
