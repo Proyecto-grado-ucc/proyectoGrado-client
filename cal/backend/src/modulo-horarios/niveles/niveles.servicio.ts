@@ -14,6 +14,8 @@ export class NivelesServicio {
   ) {}
 
   async crear(dto: CrearNivelDto): Promise<RespuestaNivelDto> {
+    const existe = await this.nivelRepo.findOne({ where: { codigo: dto.codigo } });
+    if (existe) throw new ConflictException(`Ya existe un nivel con el código ${dto.codigo}`);
 
     const nivel = this.nivelRepo.create(dto);
     return this.mapear(await this.nivelRepo.save(nivel));
@@ -37,6 +39,11 @@ export class NivelesServicio {
   async actualizar(id: number, dto: ActualizarNivelDto): Promise<RespuestaNivelDto> {
     const n = await this.nivelRepo.findOne({ where: { id } });
     if (!n) throw new NotFoundException(`Nivel ${id} no encontrado`);
+
+    if (dto.codigo && dto.codigo !== n.codigo) {
+      const duplicado = await this.nivelRepo.findOne({ where: { codigo: dto.codigo } });
+      if (duplicado) throw new ConflictException(`El código ${dto.codigo} ya está en uso`);
+    }
 
     Object.assign(n, dto);
     return this.mapear(await this.nivelRepo.save(n));
