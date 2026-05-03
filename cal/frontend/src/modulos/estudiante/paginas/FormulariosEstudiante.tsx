@@ -28,7 +28,7 @@ export default function FormulariosEstudiante() {
   const miEstudiante = estudiantes?.find(e => e.usuarioEmail === email);
   const miGrupoId = miEstudiante?.grupoId;
 
-  const { data: horarios } = useQuery({ queryKey: ['horarios-fe'], queryFn: () => fetchAll<Horario>('/horarios') });
+  const { data: horarios } = useQuery({ queryKey: ['horarios-fe'], queryFn: () => fetchAll<Horario>('/horarios?archivado=false') });
   const horarioActivoResumen = horarios?.[0];
 
   const { data: horarioDetalle } = useQuery({

@@ -55,7 +55,7 @@ export default function HorarioEstudiante() {
     }
   });
 
-  const { data: horarios } = useQuery({ queryKey: ['horarios-he'], queryFn: () => fetchAll<Horario>('/horarios') });
+  const { data: horarios } = useQuery({ queryKey: ['horarios-he'], queryFn: () => fetchAll<Horario>('/horarios?archivado=false') });
   const horarioActivoResumen = horarios?.[0];
 
   const { data: horarioDetalle, isLoading } = useQuery({
