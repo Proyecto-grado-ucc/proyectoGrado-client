@@ -20,6 +20,8 @@ export class AlertasControlador {
   @ApiResponse({ status: 200, type: [RespuestaAlertaDto] })
   listar(
     @Query('periodoId', new ParseIntPipe({ optional: true })) periodoId?: number,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('size', new ParseIntPipe({ optional: true })) size?: number,
   ): Promise<RespuestaAlertaDto[]> {
     return this.alertasServicio.listar(periodoId);
   }
