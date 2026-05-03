@@ -12,4 +12,7 @@ export class Estudiante {
 
   @Column({ type: 'int', name: 'grupo_id', nullable: true })
   grupoId: number | null;
+
+  @Column({ type: 'int', name: 'horario_id', nullable: true })
+  horarioId: number | null;
 }

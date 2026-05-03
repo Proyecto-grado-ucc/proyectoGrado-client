@@ -122,7 +122,14 @@ export default function FormulariosEstudiante() {
   const [evaluacionActiva, setEvaluacionActiva] = useState<Evaluacion | null>(null);
   const { data: evaluaciones, isLoading } = useQuery({
     queryKey: ['evaluaciones-formularios'],
-    queryFn: () => fetchAll<Evaluacion>('/evaluaciones'),
+    queryFn: async () => {
+      try {
+        const { data } = await clienteApi.get('/evaluaciones/estudiante/mis-evaluaciones');
+        return (data as Evaluacion[]);
+      } catch {
+        return [] as Evaluacion[];
+      }
+    },
   });
 
   const pendientes = evaluaciones?.filter(e => e.estado !== 'COMPLETADA') ?? [];

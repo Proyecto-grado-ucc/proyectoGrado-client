@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Docente } from '../compartido/entidades/docente.entidad';
+import { Estudiante } from '../compartido/entidades/estudiante.entidad';
 import { PeriodoAcademico } from '../compartido/entidades/periodo-academico.entidad';
+import { Horario } from '../modulo-horarios/entidades/horario.entidad';
 import { SeguridadModulo } from '../seguridad/seguridad.modulo';
 import { AlertasControlador } from './alertas/alertas.controlador';
 import { AlertasServicio } from './alertas/alertas.servicio';
@@ -32,7 +34,7 @@ import { RespuestasServicio } from './respuestas/respuestas.servicio';
     TypeOrmModule.forFeature([
       Formulario, Dimension, Pregunta, Evaluacion, Respuesta,
       ResultadoKdd, Alerta,
-      PeriodoAcademico, Docente,
+      PeriodoAcademico, Docente, Estudiante, Horario,
     ]),
     SeguridadModulo,
   ],
