@@ -24,11 +24,11 @@ import { HorariosServicio } from './horarios.servicio';
 @ApiTags('horarios')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('horarios')
 export class HorariosControlador {
   constructor(private readonly horariosServicio: HorariosServicio) { }
 
+  @Roles(RolNombre.Admin)
   @Post('generar')
   @Auditar('HORARIO')
   @ApiOperation({ summary: 'Generar horario con AG + Búsqueda Tabú + Gemini' })
@@ -56,6 +56,7 @@ export class HorariosControlador {
     return this.horariosServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('HORARIO')
   @HttpCode(HttpStatus.NO_CONTENT)

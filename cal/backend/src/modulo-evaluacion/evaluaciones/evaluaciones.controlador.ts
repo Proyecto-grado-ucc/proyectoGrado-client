@@ -13,11 +13,11 @@ import { RespuestaEvaluacionDto, RespuestaPaginadaEvaluacionDto } from './dto/re
 @ApiTags('evaluaciones')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('evaluaciones')
 export class EvaluacionesControlador {
   constructor(private readonly evaluacionesServicio: EvaluacionesServicio) { }
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('EVALUACION')
   @ApiOperation({ summary: 'Crear evaluación docente' })
@@ -44,6 +44,7 @@ export class EvaluacionesControlador {
     return this.evaluacionesServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('EVALUACION')
   @ApiResponse({ status: 200, type: RespuestaEvaluacionDto })
@@ -51,6 +52,7 @@ export class EvaluacionesControlador {
     return this.evaluacionesServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('EVALUACION')
   @HttpCode(HttpStatus.NO_CONTENT)

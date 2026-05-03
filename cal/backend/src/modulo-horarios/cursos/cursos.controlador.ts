@@ -26,11 +26,11 @@ import { RespuestaCursoDto, RespuestaPaginadaCursoDto } from './dto/respuesta-cu
 @ApiTags('cursos')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('cursos')
 export class CursosControlador {
   constructor(private readonly cursosServicio: CursosServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('CURSO')
   @ApiOperation({ summary: 'Crear curso' })
@@ -58,6 +58,7 @@ export class CursosControlador {
     return this.cursosServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('CURSO')
   @ApiOperation({ summary: 'Actualizar curso' })
@@ -69,6 +70,7 @@ export class CursosControlador {
     return this.cursosServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('CURSO')
   @HttpCode(HttpStatus.NO_CONTENT)

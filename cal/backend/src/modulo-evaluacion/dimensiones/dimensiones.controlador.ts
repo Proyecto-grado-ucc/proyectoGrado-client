@@ -13,11 +13,11 @@ import { RespuestaDimensionDto, RespuestaPaginadaDimensionDto } from './dto/resp
 @ApiTags('dimensiones')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('dimensiones')
 export class DimensionesControlador {
   constructor(private readonly dimensionesServicio: DimensionesServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('DIMENSION')
   @ApiResponse({ status: 201, type: RespuestaDimensionDto })
@@ -43,6 +43,7 @@ export class DimensionesControlador {
     return this.dimensionesServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('DIMENSION')
   @ApiResponse({ status: 200, type: RespuestaDimensionDto })
@@ -50,6 +51,7 @@ export class DimensionesControlador {
     return this.dimensionesServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('DIMENSION')
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -26,11 +26,11 @@ import { GruposServicio } from './grupos.servicio';
 @ApiTags('grupos')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('grupos')
 export class GruposControlador {
   constructor(private readonly gruposServicio: GruposServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('GRUPO')
   @ApiOperation({ summary: 'Crear grupo' })
@@ -58,6 +58,7 @@ export class GruposControlador {
     return this.gruposServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('GRUPO')
   @ApiOperation({ summary: 'Actualizar grupo' })
@@ -69,6 +70,7 @@ export class GruposControlador {
     return this.gruposServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('GRUPO')
   @HttpCode(HttpStatus.NO_CONTENT)

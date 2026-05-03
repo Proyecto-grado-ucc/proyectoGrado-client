@@ -26,11 +26,11 @@ import { NivelesServicio } from './niveles.servicio';
 @ApiTags('niveles')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('niveles')
 export class NivelesControlador {
   constructor(private readonly nivelesServicio: NivelesServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('NIVEL_IDIOMA')
   @ApiOperation({ summary: 'Crear nivel de idioma' })
@@ -58,6 +58,7 @@ export class NivelesControlador {
     return this.nivelesServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('NIVEL_IDIOMA')
   @ApiOperation({ summary: 'Actualizar nivel' })
@@ -69,6 +70,7 @@ export class NivelesControlador {
     return this.nivelesServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('NIVEL_IDIOMA')
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -26,11 +26,11 @@ import { RespuestaDisponibilidadDto, RespuestaPaginadaDisponibilidadDto } from '
 @ApiTags('disponibilidades')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('disponibilidades')
 export class DisponibilidadesControlador {
   constructor(private readonly disponibilidadesServicio: DisponibilidadesServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('DISPONIBILIDAD')
   @ApiOperation({ summary: 'Registrar disponibilidad de docente' })
@@ -58,6 +58,7 @@ export class DisponibilidadesControlador {
     return this.disponibilidadesServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('DISPONIBILIDAD')
   @ApiOperation({ summary: 'Actualizar disponibilidad' })
@@ -69,6 +70,7 @@ export class DisponibilidadesControlador {
     return this.disponibilidadesServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('DISPONIBILIDAD')
   @HttpCode(HttpStatus.NO_CONTENT)

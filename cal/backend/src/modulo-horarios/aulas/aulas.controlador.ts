@@ -26,11 +26,11 @@ import { RespuestaAulaDto, RespuestaPaginadaAulaDto } from './dto/respuesta-aula
 @ApiTags('aulas')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('aulas')
 export class AulasControlador {
   constructor(private readonly aulasServicio: AulasServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('AULA')
   @ApiOperation({ summary: 'Crear aula' })
@@ -58,6 +58,7 @@ export class AulasControlador {
     return this.aulasServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('AULA')
   @ApiOperation({ summary: 'Actualizar aula' })
@@ -69,6 +70,7 @@ export class AulasControlador {
     return this.aulasServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('AULA')
   @HttpCode(HttpStatus.NO_CONTENT)

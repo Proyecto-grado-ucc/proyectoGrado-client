@@ -26,11 +26,11 @@ import { EstudiantesServicio } from './estudiantes.servicio';
 @ApiTags('estudiantes')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('estudiantes')
 export class EstudiantesControlador {
   constructor(private readonly estudiantesServicio: EstudiantesServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('ESTUDIANTE')
   @ApiOperation({ summary: 'Crear estudiante' })
@@ -58,6 +58,7 @@ export class EstudiantesControlador {
     return this.estudiantesServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('ESTUDIANTE')
   @ApiOperation({ summary: 'Actualizar estudiante' })
@@ -69,6 +70,7 @@ export class EstudiantesControlador {
     return this.estudiantesServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('ESTUDIANTE')
   @HttpCode(HttpStatus.NO_CONTENT)

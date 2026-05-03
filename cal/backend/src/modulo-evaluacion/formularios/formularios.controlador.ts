@@ -13,11 +13,11 @@ import { FormulariosServicio } from './formularios.servicio';
 @ApiTags('formularios')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('formularios')
 export class FormulariosControlador {
   constructor(private readonly formulariosServicio: FormulariosServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('FORMULARIO')
   @ApiOperation({ summary: 'Crear formulario de evaluación' })
@@ -44,6 +44,7 @@ export class FormulariosControlador {
     return this.formulariosServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('FORMULARIO')
   @ApiResponse({ status: 200, type: RespuestaFormularioDto })
@@ -51,6 +52,7 @@ export class FormulariosControlador {
     return this.formulariosServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('FORMULARIO')
   @HttpCode(HttpStatus.NO_CONTENT)

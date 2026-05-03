@@ -10,7 +10,6 @@ import { RespuestaDashboardDto } from './dto/respuesta-dashboard.dto';
 @ApiTags('dashboard')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('dashboard')
 export class DashboardControlador {
   constructor(private readonly dashboardServicio: DashboardServicio) {}

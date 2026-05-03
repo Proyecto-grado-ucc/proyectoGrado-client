@@ -32,11 +32,11 @@ import { UsuariosServicio } from './usuarios.servicio';
 @ApiTags('usuarios')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('usuarios')
 export class UsuariosControlador {
   constructor(private readonly usuariosServicio: UsuariosServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('USUARIO')
   @ApiOperation({ summary: 'Crear usuario' })
@@ -64,6 +64,7 @@ export class UsuariosControlador {
     return this.usuariosServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('USUARIO')
   @ApiOperation({ summary: 'Actualizar usuario' })
@@ -75,6 +76,7 @@ export class UsuariosControlador {
     return this.usuariosServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('USUARIO')
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -10,7 +10,6 @@ import { RespuestaPaginadaAuditLogDto } from './dto/respuesta-audit-log.dto';
 @ApiTags('audit-log')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('audit-log')
 export class AuditLogControlador {
   constructor(private readonly auditLogServicio: AuditLogServicio) {}

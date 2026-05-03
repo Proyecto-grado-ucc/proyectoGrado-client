@@ -10,7 +10,6 @@ import { RespuestaAlertaDto } from './dto/respuesta-alerta.dto';
 @ApiTags('alertas')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('alertas')
 export class AlertasControlador {
   constructor(private readonly alertasServicio: AlertasServicio) {}
@@ -25,6 +24,7 @@ export class AlertasControlador {
     return this.alertasServicio.listar(periodoId);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id/leer')
   @ApiOperation({ summary: 'Marcar alerta como leída' })
   @ApiResponse({ status: 200, type: RespuestaAlertaDto })
@@ -32,6 +32,7 @@ export class AlertasControlador {
     return this.alertasServicio.marcarLeida(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Eliminar alerta' })

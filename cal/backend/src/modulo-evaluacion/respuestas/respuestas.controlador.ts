@@ -13,11 +13,11 @@ import { RespuestasServicio } from './respuestas.servicio';
 @ApiTags('respuestas')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('respuestas')
 export class RespuestasControlador {
   constructor(private readonly respuestasServicio: RespuestasServicio) { }
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('RESPUESTA')
   @ApiResponse({ status: 201, type: DetalleRespuestaDto })
@@ -44,6 +44,7 @@ export class RespuestasControlador {
     return this.respuestasServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('RESPUESTA')
   @ApiResponse({ status: 200, type: DetalleRespuestaDto })
@@ -51,6 +52,7 @@ export class RespuestasControlador {
     return this.respuestasServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('RESPUESTA')
   @HttpCode(HttpStatus.NO_CONTENT)

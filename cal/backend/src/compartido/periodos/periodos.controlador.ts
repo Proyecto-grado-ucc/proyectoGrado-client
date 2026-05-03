@@ -26,11 +26,11 @@ import { PeriodosServicio } from './periodos.servicio';
 @ApiTags('periodos')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('periodos')
 export class PeriodosControlador {
   constructor(private readonly periodosServicio: PeriodosServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('PERIODO_ACADEMICO')
   @ApiOperation({ summary: 'Crear periodo académico' })
@@ -58,6 +58,7 @@ export class PeriodosControlador {
     return this.periodosServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('PERIODO_ACADEMICO')
   @ApiOperation({ summary: 'Actualizar periodo' })
@@ -69,6 +70,7 @@ export class PeriodosControlador {
     return this.periodosServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('PERIODO_ACADEMICO')
   @HttpCode(HttpStatus.NO_CONTENT)

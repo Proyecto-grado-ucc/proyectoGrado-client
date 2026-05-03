@@ -26,11 +26,11 @@ import { FranjasServicio } from './franjas.servicio';
 @ApiTags('franjas-horarias')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('franjas-horarias')
 export class FranjasControlador {
   constructor(private readonly franjasServicio: FranjasServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post()
   @Auditar('FRANJA_HORARIA')
   @ApiOperation({ summary: 'Crear franja horaria' })
@@ -58,6 +58,7 @@ export class FranjasControlador {
     return this.franjasServicio.buscarPorId(id);
   }
 
+  @Roles(RolNombre.Admin)
   @Patch(':id')
   @Auditar('FRANJA_HORARIA')
   @ApiOperation({ summary: 'Actualizar franja horaria' })
@@ -69,6 +70,7 @@ export class FranjasControlador {
     return this.franjasServicio.actualizar(id, dto);
   }
 
+  @Roles(RolNombre.Admin)
   @Delete(':id')
   @Auditar('FRANJA_HORARIA')
   @HttpCode(HttpStatus.NO_CONTENT)

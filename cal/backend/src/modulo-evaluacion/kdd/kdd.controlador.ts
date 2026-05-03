@@ -12,11 +12,11 @@ import { KddPipelineServicio } from './kdd-pipeline.servicio';
 @ApiTags('kdd')
 @ApiBearerAuth()
 @UseGuards(JwtGuardia, RolesGuardia)
-@Roles(RolNombre.Admin)
 @Controller('kdd')
 export class KddControlador {
   constructor(private readonly kddServicio: KddPipelineServicio) {}
 
+  @Roles(RolNombre.Admin)
   @Post('ejecutar')
   @Auditar('KDD')
   @ApiOperation({ summary: 'Ejecutar pipeline KDD para un período académico' })
