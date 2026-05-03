@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { clienteApi } from '../../../compartido/api';
 import { useAuthStore } from '../../../seguridad/store';
 
@@ -24,9 +25,24 @@ const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
 export default function HorarioEstudiante() {
   const email = useAuthStore(s => s.usuario?.email ?? '');
 
+  const queryClient = useQueryClient();
+  const [codigoIngresado, setCodigoIngresado] = useState('');
+  const [errorMatricula, setErrorMatricula] = useState('');
+
   const { data: estudiantes } = useQuery({ queryKey: ['estudiantes-he'], queryFn: () => fetchAll<Estudiante>('/estudiantes') });
   const miEstudiante = estudiantes?.find(e => e.usuarioEmail === email);
   const miGrupoId = miEstudiante?.grupoId;
+
+  const mutMatricular = useMutation({
+    mutationFn: (codigoAcceso: string) => clienteApi.post('/estudiantes/matricular', { codigoAcceso }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estudiantes-he'] });
+      setErrorMatricula('');
+    },
+    onError: (e: any) => {
+      setErrorMatricula(e?.response?.data?.message ?? 'Error al matricularse');
+    }
+  });
 
   const { data: horarios } = useQuery({ queryKey: ['horarios-he'], queryFn: () => fetchAll<Horario>('/horarios') });
   const horarioActivoResumen = horarios?.[0];
@@ -51,6 +67,45 @@ export default function HorarioEstudiante() {
     return (
       <div className="p-8 flex items-center justify-center min-h-full">
         <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!miGrupoId) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-full bg-gray-50">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center border border-gray-100">
+          <div className="mx-auto w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Ingresa a tu clase</h2>
+          <p className="text-gray-500 mb-6 text-sm">Digita el código de acceso proporcionado por la academia para ver tu horario y docentes asignados.</p>
+          
+          <form onSubmit={(e) => { e.preventDefault(); mutMatricular.mutate(codigoIngresado); }}>
+            <div className="mb-4 text-left">
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Código de Acceso</label>
+              <input 
+                type="text" 
+                placeholder="Ej. B1-X7K9" 
+                value={codigoIngresado}
+                onChange={e => setCodigoIngresado(e.target.value.toUpperCase())}
+                className="w-full text-center text-lg tracking-widest font-mono bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors uppercase"
+                disabled={mutMatricular.isPending}
+                required
+              />
+            </div>
+            {errorMatricula && <p className="text-xs text-red-600 bg-red-50 p-3 rounded-lg mb-4 text-left">{errorMatricula}</p>}
+            <button 
+              type="submit" 
+              disabled={mutMatricular.isPending || !codigoIngresado}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md shadow-blue-500/20 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+            >
+              {mutMatricular.isPending ? 'Validando...' : 'Matricularme'}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }

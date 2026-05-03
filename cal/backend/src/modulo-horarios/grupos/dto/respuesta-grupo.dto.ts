@@ -8,6 +8,7 @@ export class RespuestaGrupoDto {
   @ApiProperty() cursoNombre: string;
   @ApiProperty() cupoMax: number;
   @ApiProperty({ enum: Jornada }) jornada: Jornada;
+  @ApiProperty() codigoAcceso: string;
 }
 
 export class RespuestaPaginadaGrupoDto {

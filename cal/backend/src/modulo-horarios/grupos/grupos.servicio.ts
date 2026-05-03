@@ -20,7 +20,8 @@ export class GruposServicio {
     const curso = await this.cursoRepo.findOne({ where: { id: dto.cursoId } });
     if (!curso) throw new NotFoundException(`Curso ${dto.cursoId} no encontrado`);
 
-    const grupo = this.grupoRepo.create({ codigo: dto.codigo, curso, cupoMax: dto.cupoMax, jornada: dto.jornada });
+    const codigoAcceso = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const grupo = this.grupoRepo.create({ codigo: dto.codigo, curso, cupoMax: dto.cupoMax, jornada: dto.jornada, codigoAcceso });
     return this.mapear(await this.grupoRepo.save(grupo));
   }
 
@@ -69,6 +70,7 @@ export class GruposServicio {
       cursoNombre: g.curso.nombre,
       cupoMax: g.cupoMax,
       jornada: g.jornada,
+      codigoAcceso: g.codigoAcceso,
     };
   }
 }

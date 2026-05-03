@@ -24,4 +24,7 @@ export class Grupo {
 
   @Column({ type: 'enum', enum: Jornada })
   jornada: Jornada;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  codigoAcceso: string;
 }

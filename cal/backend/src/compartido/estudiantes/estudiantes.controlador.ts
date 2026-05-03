@@ -22,6 +22,8 @@ import { ActualizarEstudianteDto } from './dto/actualizar-estudiante.dto';
 import { CrearEstudianteDto } from './dto/crear-estudiante.dto';
 import { RespuestaEstudianteDto, RespuestaPaginadaEstudianteDto } from './dto/respuesta-estudiante.dto';
 import { EstudiantesServicio } from './estudiantes.servicio';
+import { UsuarioActual } from '../../seguridad/decoradores/usuario-actual.decorador';
+import { UsuarioAutenticado } from '../../seguridad/auth/estrategias/jwt.estrategia';
 
 @ApiTags('estudiantes')
 @ApiBearerAuth()
@@ -37,6 +39,18 @@ export class EstudiantesControlador {
   @ApiResponse({ status: 201, type: RespuestaEstudianteDto })
   crear(@Body() dto: CrearEstudianteDto): Promise<RespuestaEstudianteDto> {
     return this.estudiantesServicio.crear(dto);
+  }
+
+  @Post('matricular')
+  @Auditar('ESTUDIANTE')
+  @ApiOperation({ summary: 'Auto-matricular estudiante a un grupo mediante código de acceso' })
+  @ApiResponse({ status: 200, schema: { properties: { mensaje: { type: 'string' } } } })
+  @ApiResponse({ status: 404, description: 'Código inválido o grupo no encontrado' })
+  matricular(
+    @Body('codigoAcceso') codigoAcceso: string,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+  ): Promise<{ mensaje: string }> {
+    return this.estudiantesServicio.matricular(usuario.id, codigoAcceso);
   }
 
   @Get()

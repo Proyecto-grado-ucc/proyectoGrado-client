@@ -11,10 +11,11 @@ import { EstudiantesControlador } from './estudiantes/estudiantes.controlador';
 import { EstudiantesServicio } from './estudiantes/estudiantes.servicio';
 import { PeriodosControlador } from './periodos/periodos.controlador';
 import { PeriodosServicio } from './periodos/periodos.servicio';
+import { Grupo } from '../modulo-horarios/entidades/grupo.entidad';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Docente, Estudiante, PeriodoAcademico, Usuario]),
+    TypeOrmModule.forFeature([Docente, Estudiante, PeriodoAcademico, Usuario, Grupo]),
     SeguridadModulo,
   ],
   providers: [PeriodosServicio, DocentesServicio, EstudiantesServicio],

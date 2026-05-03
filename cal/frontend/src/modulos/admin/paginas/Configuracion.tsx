@@ -490,12 +490,13 @@ export default function Configuracion() {
     {
       ruta: '/grupos',
       titulo: 'Grupos',
-      columnas: ['Codigo', 'Curso', 'Cupo max', 'Jornada'],
+      columnas: ['Codigo', 'Curso', 'Cupo max', 'Jornada', 'Cod. Acceso'],
       campos: [
         { key: 'codigo', label: 'Codigo' },
         { key: 'cursoId', label: 'Curso', type: 'number', opcionesRuta: '/cursos', opcionesLabel: 'nombre', opcionesValue: 'id' },
         { key: 'cupoMax', label: 'Cupo maximo', type: 'number' },
         { key: 'jornada', label: 'Jornada', opciones: [{value:'MANANA',label:'Manana'},{value:'TARDE',label:'Tarde'},{value:'NOCHE',label:'Noche'}] },
+        { key: 'codigoAcceso', label: 'Codigo Acceso' },
       ],
       camposEditar: [
         { key: 'codigo', label: 'Codigo' },

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../../seguridad/entidades/usuario.entidad';
+import { Grupo } from '../../modulo-horarios/entidades/grupo.entidad';
 import { Estudiante } from '../entidades/estudiante.entidad';
 import { ActualizarEstudianteDto } from './dto/actualizar-estudiante.dto';
 import { CrearEstudianteDto } from './dto/crear-estudiante.dto';
@@ -14,6 +15,8 @@ export class EstudiantesServicio {
     private readonly estudianteRepo: Repository<Estudiante>,
     @InjectRepository(Usuario)
     private readonly usuarioRepo: Repository<Usuario>,
+    @InjectRepository(Grupo)
+    private readonly grupoRepo: Repository<Grupo>,
   ) {}
 
   async crear(dto: CrearEstudianteDto): Promise<RespuestaEstudianteDto> {
@@ -25,6 +28,19 @@ export class EstudiantesServicio {
       grupoId: dto.grupoId ?? null,
     });
     return this.mapear(await this.estudianteRepo.save(estudiante));
+  }
+
+  async matricular(usuarioId: number, codigoAcceso: string): Promise<{ mensaje: string }> {
+    if (!codigoAcceso) throw new NotFoundException('Código de acceso no proporcionado');
+    const grupo = await this.grupoRepo.findOne({ where: { codigoAcceso } });
+    if (!grupo) throw new NotFoundException('Código de clase inválido o grupo no encontrado');
+
+    const estudiante = await this.estudianteRepo.findOne({ where: { usuario: { id: usuarioId } } });
+    if (!estudiante) throw new NotFoundException('Estudiante no encontrado para este usuario');
+
+    estudiante.grupoId = grupo.id;
+    await this.estudianteRepo.save(estudiante);
+    return { mensaje: 'Matriculado exitosamente' };
   }
 
   async listar(page: number, size: number): Promise<RespuestaPaginadaEstudianteDto> {
