@@ -35,7 +35,7 @@ function RutasAnimadas() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<TransicionPagina><Login /></TransicionPagina>} />
         <Route path="/recuperar-contrasena" element={<TransicionPagina><RecuperarContrasena /></TransicionPagina>} />
-        <Route path="/restablecer-contrasena" element={<TransicionPagina><RestablecerContrasena /></TransicionPagina>} />
+        <Route path="/nueva-contrasena" element={<TransicionPagina><RestablecerContrasena /></TransicionPagina>} />
 
         <Route path="/admin" element={<RutaProtegida><LayoutAdmin /></RutaProtegida>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />

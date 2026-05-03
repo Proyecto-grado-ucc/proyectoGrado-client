@@ -1,199 +1,219 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
 
-interface Evaluacion { id: number; docenteEvaluadoNombre: string; formularioTitulo: string; formularioId: number; estado: string; }
-interface Pregunta { id: number; texto: string; tipo: string; dimensionId: number; }
-interface RespuestaLocal { preguntaId: number; valorNumerico: number | null; valorTexto: string | null; }
+interface Pregunta { id: number; texto: string; tipo: 'likert' | 'texto'; }
+interface Dimension { id: number; nombre: string; preguntas: Pregunta[]; }
+interface Formulario { id: number; titulo: string; descripcion: string; dimensiones: Dimension[]; }
+interface Evaluacion { id: number; formularioId: number; formularioTitulo: string; docenteEvaluadoId: number; docenteEvaluadoNombre: string; estado: string; }
 
-const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
-  const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 100 } });
-  return (data.items ?? data) as T[];
-};
-
-// ── Formulario de respuestas ───────────────────────────────────────────────────
-function FormularioRespuestas({ evaluacion, onVolver }: { evaluacion: Evaluacion; onVolver: () => void }) {
+export default function FormulariosEstudiante() {
   const qc = useQueryClient();
-  const [respuestas, setRespuestas] = useState<Record<number, RespuestaLocal>>({});
-  const [enviado, setEnviado] = useState(false);
-  const [error, setError] = useState('');
+  const [evaluacionActiva, setEvaluacionActiva] = useState<Evaluacion | null>(null);
+  const [respuestas, setRespuestas] = useState<Record<number, string | number>>({});
+  const [enviando, setEnviando] = useState(false);
 
-  const { data: preguntas, isLoading } = useQuery({
-    queryKey: ['preguntas-form', evaluacion.formularioId],
-    queryFn: () => fetchAll<Pregunta>(`/preguntas?formularioId=${evaluacion.formularioId}`),
+  // 1. Obtener evaluaciones del estudiante
+  const { data: evaluaciones = [], isLoading: cargandoEvals } = useQuery({
+    queryKey: ['mis-evaluaciones'],
+    queryFn: async () => {
+      try {
+        const { data } = await clienteApi.get('/evaluaciones/estudiante/mis-evaluaciones');
+        return data as Evaluacion[];
+      } catch {
+        return [];
+      }
+    }
   });
 
-  const responder = (preguntaId: number, tipo: string, valor: string | number) => {
-    setRespuestas(prev => ({
-      ...prev,
-      [preguntaId]: tipo === 'TEXTO'
-        ? { preguntaId, valorNumerico: null, valorTexto: String(valor) }
-        : { preguntaId, valorNumerico: Number(valor), valorTexto: null },
-    }));
+  // 2. Obtener detalles del formulario activo
+  const { data: formularioActivo, isLoading: cargandoForm } = useQuery({
+    queryKey: ['formulario', evaluacionActiva?.formularioId],
+    queryFn: async () => {
+      if (!evaluacionActiva) return null;
+      const { data } = await clienteApi.get(`/formularios/${evaluacionActiva.formularioId}`);
+      return data as Formulario;
+    },
+    enabled: !!evaluacionActiva
+  });
+
+  const pendientes = evaluaciones.filter(e => e.estado === 'PENDIENTE');
+
+  const responder = (preguntaId: number, valor: string | number) => {
+    setRespuestas(prev => ({ ...prev, [preguntaId]: valor }));
   };
 
-  const likerts = preguntas?.filter(p => p.tipo === 'LIKERT') ?? [];
-  const completado = likerts.length > 0 && likerts.every(p => respuestas[p.id] !== undefined);
+  const enviarEvaluacion = async () => {
+    if (!evaluacionActiva || !formularioActivo) return;
+    setEnviando(true);
+    try {
+      // Enviar cada respuesta al backend
+      const promesas = Object.entries(respuestas).map(([pId, val]) => {
+        const esNum = typeof val === 'number';
+        return clienteApi.post('/respuestas', {
+          evaluacionId: evaluacionActiva.id,
+          preguntaId: Number(pId),
+          valorNumerico: esNum ? val : null,
+          valorTexto: esNum ? null : val
+        });
+      });
+      await Promise.all(promesas);
 
-  const mutEnviar = useMutation({
-    mutationFn: async () => {
-      for (const r of Object.values(respuestas)) {
-        await clienteApi.post('/respuestas', { evaluacionId: evaluacion.id, ...r });
-      }
-      await clienteApi.patch(`/evaluaciones/${evaluacion.id}`, { estado: 'COMPLETADA' });
-    },
-    onSuccess: () => { setEnviado(true); qc.invalidateQueries({ queryKey: ['evaluaciones-formularios'] }); },
-    onError: (e: unknown) => {
-      const m = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(m ?? 'Error al enviar. Intenta de nuevo.');
-    },
-  });
+      // Marcar evaluacion como completada
+      await clienteApi.patch(`/evaluaciones/${evaluacionActiva.id}`, { estado: 'COMPLETADA' });
 
-  if (enviado) {
+      // Refresh
+      qc.invalidateQueries({ queryKey: ['mis-evaluaciones'] });
+      setEvaluacionActiva(null);
+      setRespuestas({});
+      alert('Evaluación enviada con éxito. ¡Gracias!');
+    } catch (error) {
+      alert('Hubo un error enviando la evaluación. Intenta de nuevo.');
+      console.error(error);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  // Validar que todas las preguntas Likert esten respondidas
+  const esCompleta = formularioActivo?.dimensiones.every(dim => 
+    dim.preguntas.filter(p => p.tipo === 'likert').every(p => respuestas[p.id] !== undefined)
+  ) ?? false;
+
+  if (cargandoEvals) {
+    return <div className="p-8 text-center text-gray-500">Cargando evaluaciones...</div>;
+  }
+
+  // VISTA 1: LISTA DE EVALUACIONES PENDIENTES
+  if (!evaluacionActiva) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-96">
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center max-w-md">
-          <p className="text-5xl mb-4">v</p>
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Evaluacion enviada</h2>
-          <p className="text-sm text-gray-500 mb-5">Gracias por tu participacion. Tus respuestas son anonimas.</p>
-          <button onClick={onVolver} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700">Volver a evaluaciones</button>
+      <div className="p-8 min-h-full bg-gray-50">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Evaluación Docente</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Selecciona un docente para evaluar</p>
         </div>
+
+        {pendientes.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 text-2xl">✓</div>
+            <h2 className="text-lg font-bold text-gray-900 mb-1">¡Todo al día!</h2>
+            <p className="text-sm text-gray-500">No tienes evaluaciones pendientes en este momento.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pendientes.map(e => (
+              <div key={e.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between">
+                <div>
+                  <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-lg mb-3">Pendiente</span>
+                  <h3 className="font-bold text-gray-900 text-lg mb-1">{e.formularioTitulo}</h3>
+                  <p className="text-sm text-gray-600">Docente: <span className="font-medium text-gray-900">{e.docenteEvaluadoNombre}</span></p>
+                </div>
+                <button 
+                  onClick={() => { setEvaluacionActiva(e); setRespuestas({}); }}
+                  className="mt-6 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  Iniciar evaluación
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {evaluaciones.filter(e => e.estado === 'COMPLETADA').length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Historial de Completadas</h2>
+            <div className="space-y-3">
+              {evaluaciones.filter(e => e.estado === 'COMPLETADA').map(e => (
+                <div key={e.id} className="bg-white rounded-xl p-4 border border-gray-100 flex items-center justify-between opacity-75">
+                  <div>
+                    <p className="font-medium text-gray-800">{e.formularioTitulo}</p>
+                    <p className="text-xs text-gray-500">Docente: {e.docenteEvaluadoNombre}</p>
+                  </div>
+                  <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-200">
+                    Completada
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
+  // VISTA 2: FORMULARIO ACTIVO
   return (
     <div className="p-8 min-h-full bg-gray-50">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={onVolver} className="text-sm text-gray-500 hover:text-gray-700">Atras</button>
-        <span className="text-gray-300">/</span>
+      <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{evaluacion.formularioTitulo}</h1>
-          <p className="text-gray-500 text-xs">Docente: {evaluacion.docenteEvaluadoNombre}</p>
+          <button onClick={() => setEvaluacionActiva(null)} className="text-sm text-blue-600 hover:underline mb-2 inline-block">← Volver</button>
+          <h1 className="text-2xl font-bold text-gray-900">Evaluando a: {evaluacionActiva.docenteEvaluadoNombre}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">{evaluacionActiva.formularioTitulo}</p>
         </div>
       </div>
-      <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-xs text-yellow-700 mb-5">
-        Tus respuestas son completamente anonimas. El docente no puede ver quien respondio.
+
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 mb-6">
+        <strong>Aviso de Privacidad:</strong> Tus respuestas son 100% anónimas y no afectarán tus calificaciones. Sé honesto para ayudarnos a mejorar.
       </div>
-      {isLoading ? (
-        <div className="text-center text-gray-400 py-8">Cargando preguntas...</div>
+
+      {cargandoForm ? (
+        <div className="text-center py-10 text-gray-500">Cargando formulario...</div>
+      ) : !formularioActivo ? (
+        <div className="text-center py-10 text-red-500">Error cargando el formulario.</div>
       ) : (
-        <div className="space-y-4">
-          {preguntas?.map((p, i) => (
-            <div key={p.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <p className="text-sm font-medium text-gray-800 mb-3">{i + 1}. {p.texto}</p>
-              {p.tipo === 'LIKERT' ? (
-                <div className="flex gap-3 items-center flex-wrap">
-                  <span className="text-xs text-gray-400">Muy en desacuerdo</span>
-                  {[1, 2, 3, 4, 5].map(v => (
-                    <button key={v} onClick={() => responder(p.id, p.tipo, v)}
-                      className={`w-9 h-9 rounded-full border-2 text-sm font-medium transition-colors ${respuestas[p.id]?.valorNumerico === v ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-200 text-gray-500 hover:border-blue-400'}`}>
-                      {v}
-                    </button>
-                  ))}
-                  <span className="text-xs text-gray-400">Muy de acuerdo</span>
-                </div>
-              ) : (
-                <textarea
-                  value={respuestas[p.id]?.valorTexto ?? ''}
-                  onChange={e => responder(p.id, p.tipo, e.target.value)}
-                  placeholder="Escribe tu comentario (opcional)..."
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-              )}
+        <div className="space-y-8">
+          {formularioActivo.dimensiones.map(dim => (
+            <div key={dim.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                <h2 className="font-bold text-gray-800">{dim.nombre}</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                {dim.preguntas.map(p => (
+                  <div key={p.id}>
+                    <p className="text-sm font-medium text-gray-800 mb-3">{p.texto}</p>
+                    {p.tipo === 'likert' ? (
+                      <div className="flex flex-wrap gap-2 md:gap-4 items-center">
+                        <span className="text-xs text-gray-400 w-full md:w-auto">Totalmente en desacuerdo</span>
+                        {[1, 2, 3, 4, 5].map(v => (
+                          <button 
+                            key={v} 
+                            onClick={() => responder(p.id, v)}
+                            className={`w-10 h-10 rounded-full border-2 text-sm font-bold transition-all ${
+                              respuestas[p.id] === v 
+                                ? 'bg-blue-600 border-blue-600 text-white transform scale-110' 
+                                : 'bg-white border-gray-200 text-gray-500 hover:border-blue-300'
+                            }`}
+                          >
+                            {v}
+                          </button>
+                        ))}
+                        <span className="text-xs text-gray-400 w-full md:w-auto text-right md:text-left">Totalmente de acuerdo</span>
+                      </div>
+                    ) : (
+                      <textarea
+                        value={(respuestas[p.id] as string) || ''}
+                        onChange={e => responder(p.id, e.target.value)}
+                        placeholder="Escribe tus observaciones aquí..."
+                        rows={3}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
+
+          <div className="flex justify-end pt-4">
+            <button 
+              onClick={enviarEvaluacion} 
+              disabled={!esCompleta || enviando}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium px-8 py-3 rounded-xl transition-all shadow-sm flex items-center gap-2"
+            >
+              {enviando ? 'Enviando...' : 'Enviar Evaluación'}
+            </button>
+          </div>
         </div>
-      )}
-      {error && <p className="mt-4 text-xs text-red-600 bg-red-50 px-4 py-2 rounded-xl">{error}</p>}
-      <div className="mt-6 flex items-center justify-between">
-        <p className="text-xs text-gray-400">{Object.values(respuestas).filter(r => r.valorNumerico !== null).length} de {likerts.length} preguntas respondidas</p>
-        <button onClick={() => mutEnviar.mutate()} disabled={!completado || mutEnviar.isPending}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium px-6 py-2.5 rounded-xl transition-colors">
-          {mutEnviar.isPending ? 'Enviando...' : 'Enviar evaluacion'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Lista de evaluaciones pendientes ──────────────────────────────────────────
-export default function FormulariosEstudiante() {
-  const [evaluacionActiva, setEvaluacionActiva] = useState<Evaluacion | null>(null);
-  const { data: evaluaciones, isLoading } = useQuery({
-    queryKey: ['evaluaciones-formularios'],
-    queryFn: async () => {
-      try {
-        const { data } = await clienteApi.get('/evaluaciones/estudiante/mis-evaluaciones');
-        return (data as Evaluacion[]);
-      } catch {
-        return [] as Evaluacion[];
-      }
-    },
-  });
-
-  const pendientes = evaluaciones?.filter(e => e.estado !== 'COMPLETADA') ?? [];
-  const completadas = evaluaciones?.filter(e => e.estado === 'COMPLETADA') ?? [];
-
-  if (evaluacionActiva) {
-    return <FormularioRespuestas evaluacion={evaluacionActiva} onVolver={() => setEvaluacionActiva(null)} />;
-  }
-
-  return (
-    <div className="p-8 min-h-full bg-gray-50">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Mis evaluaciones</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Evaluaciones de docentes asignadas a tu perfil</p>
-      </div>
-
-      {isLoading ? (
-        <div className="text-center text-gray-400 py-12">Cargando...</div>
-      ) : (
-        <>
-          {pendientes.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Pendientes ({pendientes.length})</h2>
-              <div className="space-y-3">
-                {pendientes.map(e => (
-                  <div key={e.id} className="bg-white rounded-2xl border border-orange-200 p-5 flex items-center justify-between shadow-sm">
-                    <div>
-                      <p className="font-medium text-gray-900">{e.formularioTitulo}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">Docente: {e.docenteEvaluadoNombre}</p>
-                    </div>
-                    <button onClick={() => setEvaluacionActiva(e)}
-                      className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex-shrink-0">
-                      Evaluar
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {completadas.length > 0 && (
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Completadas ({completadas.length})</h2>
-              <div className="space-y-3">
-                {completadas.map(e => (
-                  <div key={e.id} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between shadow-sm opacity-70">
-                    <div>
-                      <p className="font-medium text-gray-700">{e.formularioTitulo}</p>
-                      <p className="text-sm text-gray-400 mt-0.5">Docente: {e.docenteEvaluadoNombre}</p>
-                    </div>
-                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Completada</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!pendientes.length && !completadas.length && (
-            <div className="text-center py-16 text-gray-400">
-              <p className="text-base font-medium text-gray-600 mb-1">Sin evaluaciones asignadas</p>
-              <p className="text-sm">Cuando el administrador asigne evaluaciones apareceran aqui.</p>
-            </div>
-          )}
-        </>
       )}
     </div>
   );

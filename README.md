@@ -1,97 +1,97 @@
 # Sistema CAL — Cambridge Academy of Languages
 
-Sistema académico para gestión de horarios con IA y evaluación docente digital.
+Academic management system with AI-powered schedule generation and digital teacher evaluation.
 
-## Tecnologías
+## Tech Stack
 
-| Capa | Tecnología |
-|------|-----------|
+| Layer | Technology |
+|-------|-----------|
 | Backend | TypeScript + NestJS 10 + TypeORM |
-| Base de datos | PostgreSQL 16 |
+| Database | PostgreSQL 16 |
 | Frontend | React 18 + Vite 5 + TailwindCSS |
-| Estado/fetch | TanStack Query + Zustand |
+| State/Fetch | TanStack Query + Zustand |
 | Charts | Recharts |
 | Auth | JWT |
-| IA | Gemini Flash 2.5 (Fase 4) |
+| AI | Gemini Flash 2.5 + Genetic Algorithm + Tabu Search |
 
-## Requisitos
+## Requirements
 
-- Docker y Docker Compose
-- Node.js 20+ (solo para desarrollo local sin Docker)
+- Docker and Docker Compose
+- Node.js 20+
 
-## Levantar con Docker (recomendado)
+## Quick Start
 
+### 1. Clone and configure
 ```bash
+git clone [repo-url]
+cd actividad2-compiladores
 cp .env.example .env
-# Edita .env con tus valores antes de continuar
-docker-compose up
+# Edit .env with your values
 ```
 
-| Servicio | URL |
-|---------|-----|
-| API REST | http://localhost:3000/api |
-| Documentación Swagger | http://localhost:3000/api/docs |
-| Frontend | http://localhost:5173 |
-| PostgreSQL | localhost:5432 |
-
-## Desarrollo local (sin Docker)
-
+### 2. Start database
 ```bash
-# Requiere PostgreSQL 16 corriendo localmente
-cp .env.example .env
+docker-compose up db
+```
 
-# Backend
+### 3. Start backend
+```bash
 cd cal/backend
 npm install
 npm run start:dev
+```
 
-# Frontend (en otra terminal)
+### 4. Start frontend (new terminal)
+```bash
 cd cal/frontend
 npm install
 npm run dev
 ```
 
-## Comandos útiles
+## Services
 
-```bash
-make dev          # Levanta todo con docker-compose
-make dev-build    # Levanta reconstruyendo imágenes
-make test         # Corre todos los tests (backend unit + e2e + frontend)
-make lint         # Lint de backend y frontend
-make build        # Construye imágenes Docker
-make install      # Instala dependencias npm en backend y frontend
-make clean        # Elimina contenedores, volúmenes y node_modules
-```
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| API REST | http://localhost:3000/api |
+| Swagger Docs | http://localhost:3000/api/docs |
+| PostgreSQL | localhost:5432 |
 
-## Estructura del proyecto
+## Default Admin Account
+**Email:** admin@cambridge.edu.co
+**Password:** Admin123!
 
-```
-cal/
-├── backend/              # NestJS + TypeORM
-│   └── src/
-│       ├── core/         # Módulos transversales (salud, config)
-│       ├── seguridad/    # Auth, JWT, RBAC, AuditLog (Fase 1)
-│       ├── modulo-horarios/    # Motor IA de horarios (Fases 3-4)
-│       ├── modulo-evaluacion/  # KDD y evaluación docente (Fases 5-6)
-│       └── compartido/   # Entidades comunes
-└── frontend/             # React 18 + Vite + TailwindCSS
-    └── src/
-        ├── modulos/horarios/
-        ├── modulos/evaluacion/
-        ├── seguridad/
-        └── compartido/
-```
+## Modules
 
-## Fases de desarrollo
+### Module 1 — AI Schedule Generation
+- Gemini Flash 2.5 optimizes genetic algorithm hyperparameters
+- Genetic Algorithm + Tabu Search generates conflict-free schedules
+- Hard constraints: no teacher/room double-booking, capacity limits
+- Soft constraints: consecutive hours, balanced distribution
 
-| Fase | Nombre | Estado |
-|------|--------|--------|
-| 0 | Bootstrap | ✅ Completada |
-| 1 | Seguridad (Auth/RBAC/AuditLog) | ⏳ Pendiente |
-| 2 | Compartido + datos maestros | ⏳ Pendiente |
-| 3 | Módulo 1: motor IA (sin Gemini) | ⏳ Pendiente |
-| 4 | Módulo 1: integración Gemini | ⏳ Pendiente |
-| 5 | Módulo 2: formularios y recolección | ⏳ Pendiente |
-| 6 | Módulo 2: KDD + alertas + dashboard | ⏳ Pendiente |
-| 7 | Frontend completo | ⏳ Pendiente |
-| 8 | Hardening | ⏳ Pendiente |
+### Module 2 — Teacher Evaluation
+- Dynamic form builder with dimensions and weighted questions
+- Anonymous student responses (Likert 1-5 + open text)
+- KDD pipeline for statistical analysis
+- Automated alerts for low-performing teachers
+- Gerencial dashboard with historical comparison
+
+### User Roles
+| Role | Access |
+|------|--------|
+| Admin | Full system access |
+| Docente | Own schedule + own evaluation results |
+| Estudiante | Group schedule + pending evaluation forms |
+
+## Development Phases
+| Phase | Name | Status |
+|-------|------|--------|
+| 0 | Bootstrap | ✅ Complete |
+| 1 | Security (Auth/RBAC/AuditLog) | ✅ Complete |
+| 2 | Shared + Master Data | ✅ Complete |
+| 3 | Module 1: AI Engine | ✅ Complete |
+| 4 | Module 1: Gemini Integration | ✅ Complete |
+| 5 | Module 2: Forms & Collection | ✅ Complete |
+| 6 | Module 2: KDD + Alerts + Dashboard | ✅ Complete |
+| 7 | Complete Frontend | ✅ Complete |
+| 8 | Hardening | ✅ Complete |

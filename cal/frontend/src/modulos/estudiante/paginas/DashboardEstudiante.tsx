@@ -8,7 +8,7 @@ interface Franja { id: number; diaSemana: string; horaInicio: string; horaFin: s
 interface Grupo { id: number; codigo: string; cursoNombre: string; }
 interface Docente { id: number; usuarioNombre: string; usuarioEmail: string; }
 interface Aula { id: number; codigo: string; }
-interface Periodo { id: number; nombre: string; }
+
 
 const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
   const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 200 } });
@@ -29,21 +29,34 @@ const DIAS: Record<string, string> = { LUN: 'Lun', MAR: 'Mar', MIE: 'Mie', JUE: 
 export default function DashboardEstudiante() {
   const email = useAuthStore(s => s.usuario?.email ?? '');
 
-  const { data: evaluaciones = [] } = useQuery({ queryKey: ['ev-est'], queryFn: () => fetchSafe<Evaluacion>('/evaluaciones') });
-  const { data: horarios } = useQuery({ queryKey: ['hor-est'], queryFn: () => fetchAll<Horario>('/horarios') });
+  // Usamos el endpoint correcto y exclusivo de estudiante para evitar vacíos por permisos
+  const { data: evaluaciones = [] } = useQuery({ 
+    queryKey: ['ev-est'], 
+    queryFn: () => fetchSafe<Evaluacion>('/evaluaciones/estudiante/mis-evaluaciones') 
+  });
+  
+  // Para ver su horario, usamos el endpoint de estudiante en vez del global (que mostraría todos o requiere admin)
+  const { data: miHorario } = useQuery<Horario | null>({ 
+    queryKey: ['hor-est-activo'], 
+    queryFn: async () => {
+      try {
+        const { data } = await clienteApi.get('/horarios/estudiante/mi-horario');
+        return data as Horario;
+      } catch {
+        return null;
+      }
+    }
+  });
+
   const { data: franjas } = useQuery({ queryKey: ['fran-est'], queryFn: () => fetchAll<Franja>('/franjas-horarias') });
   const { data: grupos } = useQuery({ queryKey: ['grup-est'], queryFn: () => fetchAll<Grupo>('/grupos') });
   const { data: docentes } = useQuery({ queryKey: ['doc-est'], queryFn: () => fetchAll<Docente>('/docentes') });
   const { data: aulas } = useQuery({ queryKey: ['aul-est'], queryFn: () => fetchAll<Aula>('/aulas') });
-  const { data: periodos } = useQuery({ queryKey: ['per-est'], queryFn: () => fetchAll<Periodo>('/periodos') });
 
-  // Evaluaciones pendientes (todas las asignadas - en una implementacion completa se filtraria por grupo del estudiante)
   const pendientes = evaluaciones.filter(e => e.estado === 'PENDIENTE');
-  const horarioActivo = horarios?.[0];
-  const periodoActivo = periodos?.[0];
 
-  // Proximas clases (primeras 4 asignaciones del horario activo como muestra)
-  const proximasClases = (horarioActivo?.asignaciones ?? []).slice(0, 4).map(a => {
+  // Próximas clases (primeras 4 asignaciones de su horario actual)
+  const proximasClases = (miHorario?.asignaciones ?? []).slice(0, 4).map(a => {
     const franja = franjas?.find(f => f.id === a.franjaId);
     const grupo = grupos?.find(g => g.id === a.grupoId);
     const docente = docentes?.find(d => d.id === a.docenteId);
@@ -61,8 +74,8 @@ export default function DashboardEstudiante() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500 mb-1">Periodo activo</p>
-          <p className="text-xl font-bold text-gray-900">{periodoActivo?.nombre ?? '-'}</p>
-          <p className="text-xs text-gray-400 mt-1">Ciclo academico en curso</p>
+          <p className="text-xl font-bold text-gray-900">{miHorario?.periodoNombre ?? '-'}</p>
+          <p className="text-xs text-gray-400 mt-1">{miHorario ? 'Inscrito y activo' : 'No inscrito aún'}</p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500 mb-1">Evaluaciones pendientes</p>
@@ -70,15 +83,15 @@ export default function DashboardEstudiante() {
           <div className="mt-2 h-1 bg-orange-400 rounded-full w-1/3" />
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 mb-1">Clases en horario</p>
-          <p className="text-3xl font-bold text-gray-900">{horarioActivo?.asignaciones.length ?? 0}</p>
+          <p className="text-xs text-gray-500 mb-1">Clases semanales</p>
+          <p className="text-3xl font-bold text-gray-900">{miHorario?.asignaciones.length ?? 0}</p>
           <div className="mt-2 h-1 bg-blue-500 rounded-full w-2/3" />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Proximas clases — {horarioActivo?.periodoNombre ?? 'Sin horario'}</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Próximas clases — {miHorario?.periodoNombre ?? 'Sin horario'}</h2>
           {proximasClases.length === 0 ? (
             <p className="text-sm text-gray-400">Sin clases disponibles.</p>
           ) : (
@@ -99,7 +112,7 @@ export default function DashboardEstudiante() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Evaluaciones pendientes</h2>
           {pendientes.length === 0 ? (
-            <p className="text-sm text-gray-400">No tienes evaluaciones pendientes. Bien hecho!</p>
+            <p className="text-sm text-gray-400">No tienes evaluaciones pendientes. ¡Bien hecho!</p>
           ) : (
             <div className="space-y-3">
               {pendientes.slice(0, 3).map(e => (

@@ -15,7 +15,6 @@ export class RespuestaHorarioDto {
   @ApiProperty() fitness: number;
   @ApiProperty() generaciones: number;
   @ApiProperty() tiempoMs: number;
-  @ApiProperty({ nullable: true }) codigoAcceso: string | null;
   @ApiProperty() creadoEn: Date;
 }
 

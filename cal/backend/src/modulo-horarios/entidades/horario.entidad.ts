@@ -26,9 +26,6 @@ export class Horario {
   @Column({ type: 'jsonb', nullable: true })
   metadatos: Record<string, unknown> | null;
 
-  @Column({ type: 'varchar', length: 20, name: 'codigo_acceso', unique: true, nullable: true })
-  codigoAcceso: string | null;
-
   @CreateDateColumn({ name: 'creado_en', type: 'timestamptz' })
   creadoEn: Date;
 }

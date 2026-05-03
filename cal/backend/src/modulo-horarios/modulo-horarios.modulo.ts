@@ -3,7 +3,6 @@ import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { Docente } from '../compartido/entidades/docente.entidad';
-import { Estudiante } from '../compartido/entidades/estudiante.entidad';
 import { PeriodoAcademico } from '../compartido/entidades/periodo-academico.entidad';
 import { SeguridadModulo } from '../seguridad/seguridad.modulo';
 import { AulasControlador } from './aulas/aulas.controlador';
@@ -34,7 +33,7 @@ import { NivelesServicio } from './niveles/niveles.servicio';
     ConfigModule,
     TypeOrmModule.forFeature([
       Aula, NivelIdioma, Curso, Grupo, FranjaHoraria, Disponibilidad,
-      Horario, Docente, PeriodoAcademico, Estudiante,
+      Horario, Docente, PeriodoAcademico,
     ]),
     SeguridadModulo,
   ],
@@ -53,7 +52,7 @@ export class ModuloHorariosModulo implements OnModuleInit {
   constructor(
     @InjectRepository(NivelIdioma)
     private readonly nivelRepo: Repository<NivelIdioma>,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     await this.sembrarNiveles();

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
 
@@ -417,7 +417,7 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar }: {
                       <select value={form[c.key] ?? ''} onChange={e => setForm({...form, [c.key]: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Seleccionar...</option>
-                        {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        {opciones.map((o: any) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
                     ) : (
                       <input type={c.type ?? 'text'} value={form[c.key] ?? ''} onChange={e => setForm({...form, [c.key]: e.target.value})}

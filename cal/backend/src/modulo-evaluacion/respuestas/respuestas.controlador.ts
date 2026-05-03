@@ -16,10 +16,9 @@ import { RespuestasServicio } from './respuestas.servicio';
 @Roles(RolNombre.Admin)
 @Controller('respuestas')
 export class RespuestasControlador {
-  constructor(private readonly respuestasServicio: RespuestasServicio) {}
+  constructor(private readonly respuestasServicio: RespuestasServicio) { }
 
   @Post()
-  @Roles(RolNombre.Admin, RolNombre.Estudiante)
   @Auditar('RESPUESTA')
   @ApiResponse({ status: 201, type: DetalleRespuestaDto })
   crear(@Body() dto: CrearRespuestaDto): Promise<DetalleRespuestaDto> {
