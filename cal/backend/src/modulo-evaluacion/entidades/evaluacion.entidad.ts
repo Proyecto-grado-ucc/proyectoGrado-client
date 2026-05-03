@@ -24,6 +24,9 @@ export class Evaluacion {
   @Column({ type: 'int', name: 'evaluador_id', nullable: true })
   evaluadorId: number | null;
 
+  @Column({ type: 'int', array: true, default: [] })
+  estudiantesCompletaron: number[];
+
   @Column({ type: 'enum', enum: EstadoEvaluacion, default: EstadoEvaluacion.Pendiente })
   estado: EstadoEvaluacion;
 

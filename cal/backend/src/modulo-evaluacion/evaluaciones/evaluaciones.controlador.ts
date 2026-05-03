@@ -59,4 +59,15 @@ export class EvaluacionesControlador {
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.evaluacionesServicio.eliminar(id);
   }
+
+  @Post(':id/completar')
+  @Auditar('EVALUACION')
+  @ApiOperation({ summary: 'Marcar evaluación como completada por un estudiante específico' })
+  @ApiResponse({ status: 200, type: RespuestaEvaluacionDto })
+  completarPorEstudiante(
+    @Param('id', ParseIntPipe) id: number, 
+    @Body('estudianteId', ParseIntPipe) estudianteId: number
+  ): Promise<RespuestaEvaluacionDto> {
+    return this.evaluacionesServicio.marcarCompletadaPorEstudiante(id, estudianteId);
+  }
 }

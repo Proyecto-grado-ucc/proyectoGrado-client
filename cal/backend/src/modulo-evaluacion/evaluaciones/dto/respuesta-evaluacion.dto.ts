@@ -10,6 +10,7 @@ export class RespuestaEvaluacionDto {
   @ApiProperty({ nullable: true }) evaluadorId: number | null;
   @ApiProperty({ enum: EstadoEvaluacion }) estado: EstadoEvaluacion;
   @ApiProperty() creadoEn: Date;
+  @ApiProperty({ type: [Number], required: false }) estudiantesCompletaron?: number[];
 }
 
 export class RespuestaPaginadaEvaluacionDto {

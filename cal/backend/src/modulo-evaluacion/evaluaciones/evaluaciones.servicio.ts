@@ -43,6 +43,18 @@ export class EvaluacionesServicio {
     return this.mapear(await this.evaluacionRepo.save(e));
   }
 
+  async marcarCompletadaPorEstudiante(id: number, estudianteId: number): Promise<RespuestaEvaluacionDto> {
+    const e = await this.evaluacionRepo.findOne({ where: { id } });
+    if (!e) throw new NotFoundException(`Evaluación ${id} no encontrada`);
+    
+    // Solo agregamos si no está ya en el arreglo para evitar duplicados
+    if (!e.estudiantesCompletaron.includes(estudianteId)) {
+      e.estudiantesCompletaron.push(estudianteId);
+    }
+    
+    return this.mapear(await this.evaluacionRepo.save(e));
+  }
+
   async eliminar(id: number): Promise<void> {
     const e = await this.evaluacionRepo.findOne({ where: { id } });
     if (!e) throw new NotFoundException(`Evaluación ${id} no encontrada`);
@@ -59,6 +71,7 @@ export class EvaluacionesServicio {
       evaluadorId: e.evaluadorId,
       estado: e.estado,
       creadoEn: e.creadoEn,
+      estudiantesCompletaron: e.estudiantesCompletaron,
     };
   }
 }

@@ -13,7 +13,7 @@ export class NivelIdioma {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'enum', enum: CodigoNivel, unique: true })
+  @Column({ type: 'enum', enum: CodigoNivel })
   codigo: CodigoNivel;
 
   @Column({ type: 'varchar', length: 100 })

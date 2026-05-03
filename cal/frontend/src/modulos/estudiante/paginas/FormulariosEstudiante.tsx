@@ -9,7 +9,7 @@ interface Horario { id: number; periodoNombre: string; asignaciones: Asignacion[
 interface Pregunta { id: number; texto: string; tipo: 'ESCALA' | 'ABIERTA' | 'OPCION_MULTIPLE'; }
 interface Dimension { id: number; nombre: string; preguntas: Pregunta[]; }
 interface Formulario { id: number; titulo: string; descripcion: string; dimensiones: Dimension[]; }
-interface Evaluacion { id: number; formularioId: number; formularioTitulo: string; docenteEvaluadoId: number; docenteEvaluadoNombre: string; estado: string; }
+interface Evaluacion { id: number; formularioId: number; formularioTitulo: string; docenteEvaluadoId: number; docenteEvaluadoNombre: string; estado: string; estudiantesCompletaron?: number[]; }
 
 const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
   const { data } = await clienteApi.get(ruta, { params: { page: 1, size: 200 } });
@@ -48,8 +48,18 @@ export default function FormulariosEstudiante() {
   const misAsignaciones = horarioDetalle?.asignaciones?.filter(a => a.grupoId === miGrupoId) ?? [];
   const docentesDeMiGrupo = new Set(misAsignaciones.map(a => a.docenteId));
 
-  const evaluaciones = evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId) && (e.estado === 'PENDIENTE' || e.estado === 'COMPLETADA' || e.estado === 'ACTIVA'));
-  const pendientes = evaluaciones.filter(e => e.estado === 'PENDIENTE' || e.estado === 'ACTIVA');
+  const evaluacionesDelDocente = evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId));
+  
+  // Una evaluación es pendiente si mi ID NO está en estudiantesCompletaron
+  const pendientes = evaluacionesDelDocente.filter(e => 
+    (e.estado === 'PENDIENTE' || e.estado === 'ACTIVA') && 
+    !(e.estudiantesCompletaron || []).includes(miEstudiante?.id ?? -1)
+  );
+
+  // Una evaluación es completada si mi ID SÍ está en estudiantesCompletaron
+  const completadas = evaluacionesDelDocente.filter(e => 
+    (e.estudiantesCompletaron || []).includes(miEstudiante?.id ?? -1)
+  );
 
   const { data: formularioActivo, isLoading: cargandoForm } = useQuery({
     queryKey: ['formulario-fe', evaluacionActiva?.formularioId],
@@ -79,7 +89,12 @@ export default function FormulariosEstudiante() {
         });
       });
       await Promise.all(promesas);
-      await clienteApi.patch(`/evaluaciones/${evaluacionActiva.id}`, { estado: 'COMPLETADA' });
+      
+      // Marcarla completada SOLO para mi estudiante
+      if (miEstudiante?.id) {
+        await clienteApi.post(`/evaluaciones/${evaluacionActiva.id}/completar`, { estudianteId: miEstudiante.id });
+      }
+      
       qc.invalidateQueries({ queryKey: ['evaluaciones-fe'] });
       setEvaluacionActiva(null);
       setRespuestas({});
@@ -134,11 +149,11 @@ export default function FormulariosEstudiante() {
           </div>
         )}
 
-        {evaluaciones.filter(e => e.estado === 'COMPLETADA').length > 0 && (
+        {completadas.length > 0 && (
           <div className="mt-12">
             <h2 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Historial de Completadas</h2>
             <div className="space-y-3">
-              {evaluaciones.filter(e => e.estado === 'COMPLETADA').map(e => (
+              {completadas.map(e => (
                 <div key={e.id} className="bg-white rounded-xl p-4 border border-gray-100 flex items-center justify-between opacity-75">
                   <div>
                     <p className="font-medium text-gray-800">{e.formularioTitulo}</p>
