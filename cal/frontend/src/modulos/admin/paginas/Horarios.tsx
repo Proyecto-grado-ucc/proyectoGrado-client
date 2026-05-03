@@ -155,7 +155,11 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
 }) {
   const [detalle, setDetalle] = useState<Asignacion | null>(null);
   const diasPresentes = [...new Set(franjas.map(f => f.diaSemana))].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
-  const bloquesUnicos = [...new Set(franjas.map(f => f.bloqueIdx))].sort((a, b) => a - b);
+  const getHoraParaSort = (bloque: number) => {
+    const f = franjas.find(x => x.bloqueIdx === bloque);
+    return f ? f.horaInicio : '23:59:59';
+  };
+  const bloquesUnicos = [...new Set(franjas.map(f => f.bloqueIdx))].sort((a, b) => getHoraParaSort(a).localeCompare(getHoraParaSort(b)));
 
   const asigFiltradas = horario.asignaciones.filter(a => {
     if (filtroDocente && String(a.docenteId) !== filtroDocente) return false;

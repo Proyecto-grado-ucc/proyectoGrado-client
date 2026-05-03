@@ -190,9 +190,14 @@ export default function HorarioEstudiante() {
     asignaciones.map(a => franjas?.find(f => f.id === a.franjaId)?.diaSemana ?? '').filter(Boolean)
   )].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
 
+  const getHoraParaSort = (bloque: number) => {
+    const f = franjas?.find(x => x.bloqueIdx === bloque);
+    return f ? f.horaInicio : '23:59:59';
+  };
+
   const bloquesUnicos = [...new Set(
     asignaciones.map(a => franjas?.find(f => f.id === a.franjaId)?.bloqueIdx ?? -1).filter(b => b >= 0)
-  )].sort((a, b) => a - b);
+  )].sort((a, b) => getHoraParaSort(a).localeCompare(getHoraParaSort(b)));
 
   const getAsig = (dia: string, bloque: number) => {
     const franja = franjas?.find(f => f.diaSemana === dia && f.bloqueIdx === bloque);
