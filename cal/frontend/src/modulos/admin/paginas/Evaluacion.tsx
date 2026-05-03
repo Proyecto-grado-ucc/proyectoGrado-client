@@ -190,6 +190,7 @@ function TabAsignaciones() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ formularioId: '', docenteEvaluadoId: '' });
+  const [asignarTodos, setAsignarTodos] = useState(false);
   const [err, setErr] = useState('');
 
   const { data: evaluaciones, isLoading } = useQuery({
@@ -206,14 +207,20 @@ function TabAsignaciones() {
   });
 
   const mutCrear = useMutation({
-    mutationFn: () => api.post('/evaluaciones', {
-      formularioId: Number(form.formularioId),
-      docenteEvaluadoId: Number(form.docenteEvaluadoId),
-    }),
+    mutationFn: () => {
+      if (asignarTodos) {
+        return api.post('/evaluaciones/asignar-todos', { formularioId: Number(form.formularioId) });
+      }
+      return api.post('/evaluaciones', {
+        formularioId: Number(form.formularioId),
+        docenteEvaluadoId: Number(form.docenteEvaluadoId),
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['evaluaciones'] });
       setModal(false);
       setForm({ formularioId: '', docenteEvaluadoId: '' });
+      setAsignarTodos(false);
       setErr('');
     },
     onError: (e: unknown) => setErr(errMsg(e)),
@@ -297,24 +304,35 @@ function TabAsignaciones() {
                 <select
                   value={form.docenteEvaluadoId}
                   onChange={e => setForm({ ...form, docenteEvaluadoId: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={asignarTodos}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                 >
                   <option value="">Seleccionar...</option>
                   {docentes?.map(d => <option key={d.id} value={d.id}>{d.usuarioNombre}</option>)}
                 </select>
               </div>
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="asignarTodos"
+                  checked={asignarTodos}
+                  onChange={(e) => setAsignarTodos(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="asignarTodos" className="text-sm text-gray-700 font-medium">Asignar a todos los docentes</label>
+              </div>
               {err && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{err}</p>}
             </div>
             <div className="flex gap-3 mt-5 justify-end">
               <button
-                onClick={() => { setModal(false); setErr(''); }}
+                onClick={() => { setModal(false); setErr(''); setAsignarTodos(false); }}
                 className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => {
-                  if (!form.formularioId || !form.docenteEvaluadoId) { setErr('Completa todos los campos.'); return; }
+                  if (!form.formularioId || (!asignarTodos && !form.docenteEvaluadoId)) { setErr('Completa todos los campos necesarios.'); return; }
                   mutCrear.mutate();
                 }}
                 disabled={mutCrear.isPending}

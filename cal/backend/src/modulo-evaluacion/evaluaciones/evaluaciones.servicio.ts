@@ -25,6 +25,20 @@ export class EvaluacionesServicio {
     return this.mapear(await this.evaluacionRepo.save(e));
   }
 
+  async asignarTodos(dto: { formularioId: number; evaluadorId?: number }): Promise<{ asignadas: number }> {
+    const formulario = await this.formularioRepo.findOne({ where: { id: dto.formularioId } });
+    if (!formulario) throw new NotFoundException(`Formulario ${dto.formularioId} no encontrado`);
+
+    const docentes = await this.docenteRepo.find();
+    if (docentes.length === 0) return { asignadas: 0 };
+
+    const evaluaciones = docentes.map(docente => this.evaluacionRepo.create({
+      formulario, docenteEvaluado: docente, evaluadorId: dto.evaluadorId ?? null
+    }));
+    await this.evaluacionRepo.save(evaluaciones);
+    return { asignadas: evaluaciones.length };
+  }
+
   async listar(page: number, size: number): Promise<RespuestaPaginadaEvaluacionDto> {
     const [items, total] = await this.evaluacionRepo.findAndCount({ order: { creadoEn: 'DESC' }, skip: (page - 1) * size, take: size });
     return { items: items.map((e) => this.mapear(e)), total, page, size };

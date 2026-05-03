@@ -26,6 +26,15 @@ export class EvaluacionesControlador {
     return this.evaluacionesServicio.crear(dto);
   }
 
+  @Roles(RolNombre.Admin)
+  @Post('asignar-todos')
+  @Auditar('EVALUACION')
+  @ApiOperation({ summary: 'Asignar evaluación a todos los docentes' })
+  @ApiResponse({ status: 201 })
+  asignarTodos(@Body() dto: { formularioId: number; evaluadorId?: number }): Promise<{ asignadas: number }> {
+    return this.evaluacionesServicio.asignarTodos(dto);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar evaluaciones paginado' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
