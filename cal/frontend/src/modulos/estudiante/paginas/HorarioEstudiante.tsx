@@ -82,6 +82,39 @@ export default function HorarioEstudiante() {
     );
   }
 
+  const ModalBaja = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+        <h3 className="text-lg font-bold text-gray-900 mb-2">¿Seguro que deseas darte de baja?</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Perderás acceso a tu grupo actual y a tus evaluaciones docentes. Deberás volver a ingresar un código de acceso para reingresar.
+        </p>
+        <p className="text-xs text-gray-600 font-semibold mb-2">
+          Escribe "<span className="text-red-600 select-all">Confirmo darme de baja</span>" para continuar:
+        </p>
+        <input
+          type="text"
+          value={confirmacionBaja}
+          onChange={e => setConfirmacionBaja(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 text-center mb-4"
+          placeholder="Confirmo darme de baja"
+        />
+        <div className="flex gap-2 justify-center">
+          <button onClick={() => { setMostrarModalBaja(false); setConfirmacionBaja(''); }} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+            Cancelar
+          </button>
+          <button
+            onClick={() => mutDesmatricular.mutate()}
+            disabled={confirmacionBaja.trim().toLowerCase() !== 'confirmo darme de baja' || mutDesmatricular.isPending}
+            className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {mutDesmatricular.isPending ? 'Procesando...' : 'Darme de baja'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (!miGrupoId) {
     return (
       <div className="p-8 flex items-center justify-center min-h-full bg-gray-50">
@@ -123,11 +156,15 @@ export default function HorarioEstudiante() {
 
   if (!horarioDetalle) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-full">
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
+      <div className="p-8 flex items-center justify-center min-h-full flex-col">
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400 mb-4 shadow-sm w-full max-w-md">
           <p className="text-base font-medium text-gray-600 mb-1">Sin horario disponible</p>
           <p className="text-sm">El administrador aún no ha publicado el horario.</p>
         </div>
+        <button onClick={() => setMostrarModalBaja(true)} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 text-sm rounded-xl font-medium transition-colors border border-red-100">
+          Darme de baja del grupo actual
+        </button>
+        {mostrarModalBaja && <ModalBaja />}
       </div>
     );
   }
@@ -136,11 +173,15 @@ export default function HorarioEstudiante() {
 
   if (asignaciones.length === 0) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-full">
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
+      <div className="p-8 flex items-center justify-center min-h-full flex-col">
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400 mb-4 shadow-sm w-full max-w-md">
           <p className="text-base font-medium text-gray-600 mb-1">Sin clases asignadas</p>
           <p className="text-sm">No tienes clases programadas en este horario.</p>
         </div>
+        <button onClick={() => setMostrarModalBaja(true)} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 text-sm rounded-xl font-medium transition-colors border border-red-100">
+          Darme de baja del grupo actual
+        </button>
+        {mostrarModalBaja && <ModalBaja />}
       </div>
     );
   }
@@ -188,38 +229,7 @@ export default function HorarioEstudiante() {
         </div>
       </div>
 
-      {mostrarModalBaja && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">¿Seguro que deseas darte de baja?</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Perderás acceso a este horario y a tus evaluaciones docentes actuales. Deberás volver a ingresar un código de acceso para reingresar.
-            </p>
-            <p className="text-xs text-gray-600 font-semibold mb-2">
-              Escribe "<span className="text-red-600 select-all">Confirmo darme de baja</span>" para continuar:
-            </p>
-            <input
-              type="text"
-              value={confirmacionBaja}
-              onChange={e => setConfirmacionBaja(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 text-center mb-4"
-              placeholder="Confirmo darme de baja"
-            />
-            <div className="flex gap-2 justify-center">
-              <button onClick={() => { setMostrarModalBaja(false); setConfirmacionBaja(''); }} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
-                Cancelar
-              </button>
-              <button
-                onClick={() => mutDesmatricular.mutate()}
-                disabled={confirmacionBaja.trim().toLowerCase() !== 'confirmo darme de baja' || mutDesmatricular.isPending}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {mutDesmatricular.isPending ? 'Procesando...' : 'Darme de baja'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {mostrarModalBaja && <ModalBaja />}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         <table className="w-full text-xs border-collapse">
