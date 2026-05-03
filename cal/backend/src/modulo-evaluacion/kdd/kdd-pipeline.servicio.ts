@@ -37,7 +37,6 @@ export class KddPipelineServicio {
       .innerJoin('fm.periodo', 'per')
       .leftJoinAndSelect('ev.docenteEvaluado', 'doc')
       .where('per.id = :periodoId', { periodoId })
-      .andWhere('ev.estado = :estado', { estado: EstadoEvaluacion.Completada })
       .getMany();
 
     if (!evaluaciones.length) {
