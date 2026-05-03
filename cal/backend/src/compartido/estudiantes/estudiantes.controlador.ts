@@ -53,6 +53,16 @@ export class EstudiantesControlador {
     return this.estudiantesServicio.matricular(usuario.id, codigoAcceso);
   }
 
+  @Post('desmatricular')
+  @Auditar('ESTUDIANTE')
+  @ApiOperation({ summary: 'Dar de baja al estudiante de su grupo actual' })
+  @ApiResponse({ status: 200, schema: { properties: { mensaje: { type: 'string' } } } })
+  desmatricular(
+    @UsuarioActual() usuario: UsuarioAutenticado,
+  ): Promise<{ mensaje: string }> {
+    return this.estudiantesServicio.desmatricular(usuario.id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar estudiantes paginado' })
   @ApiQuery({ name: 'page', required: false, example: 1 })

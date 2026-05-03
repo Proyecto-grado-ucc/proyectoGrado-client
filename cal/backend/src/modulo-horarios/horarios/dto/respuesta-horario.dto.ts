@@ -15,6 +15,7 @@ export class RespuestaHorarioDto {
   @ApiProperty() fitness: number;
   @ApiProperty() generaciones: number;
   @ApiProperty() tiempoMs: number;
+  @ApiProperty() archivado: boolean;
   @ApiProperty() creadoEn: Date;
 }
 

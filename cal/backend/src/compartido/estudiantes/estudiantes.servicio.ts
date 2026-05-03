@@ -43,6 +43,15 @@ export class EstudiantesServicio {
     return { mensaje: 'Matriculado exitosamente' };
   }
 
+  async desmatricular(usuarioId: number): Promise<{ mensaje: string }> {
+    const estudiante = await this.estudianteRepo.findOne({ where: { usuario: { id: usuarioId } } });
+    if (!estudiante) throw new NotFoundException('Estudiante no encontrado para este usuario');
+
+    estudiante.grupoId = null;
+    await this.estudianteRepo.save(estudiante);
+    return { mensaje: 'Desmatriculado exitosamente' };
+  }
+
   async listar(page: number, size: number): Promise<RespuestaPaginadaEstudianteDto> {
     const [items, total] = await this.estudianteRepo.findAndCount({
       skip: (page - 1) * size,

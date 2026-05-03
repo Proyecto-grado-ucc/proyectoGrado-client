@@ -15,11 +15,11 @@ interface Nivel { id: number; codigo: string; }
 interface Docente { id: number; usuarioNombre: string; usuarioEmail: string; }
 interface Aula { id: number; codigo: string; tipo: string; }
 
-const fetchAll = async <T extends object>(ruta: string, size = 200): Promise<T[]> => {
-  const { data } = await clienteApi.get(ruta, { params: { page: 1, size } });
+const fetchAll = async <T extends object>(ruta: string, size = 200, extraParams: any = {}): Promise<T[]> => {
+  const { data } = await clienteApi.get(ruta, { params: { page: 1, size, ...extraParams } });
   return data.items as T[];
 };
-const fetchHorarios = () => fetchAll<Horario>('/horarios', 50);
+const fetchHorarios = (archivado: boolean) => fetchAll<Horario>('/horarios', 50, { archivado });
 const fetchHorario = async (id: number): Promise<Horario> => { const { data } = await clienteApi.get(`/horarios/${id}`); return data as Horario; };
 
 const DIAS: Record<string, string> = { LUN: 'Lunes', MAR: 'Martes', MIE: 'Miercoles', JUE: 'Jueves', VIE: 'Viernes', SAB: 'Sabado' };
@@ -227,8 +227,9 @@ export default function Horarios() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [filtroDocente, setFiltroDocente] = useState('');
   const [filtroAula, setFiltroAula] = useState('');
+  const [tab, setTab] = useState<'activos' | 'historial'>('activos');
 
-  const { data: horarios, isLoading: cargandoLista } = useQuery({ queryKey: ['horarios'], queryFn: fetchHorarios });
+  const { data: horarios, isLoading: cargandoLista } = useQuery({ queryKey: ['horarios', tab], queryFn: () => fetchHorarios(tab === 'historial') });
   const { data: horarioDetalle, isLoading: cargandoDetalle } = useQuery({
     queryKey: ['horario', horarioSelId], queryFn: () => fetchHorario(horarioSelId!), enabled: horarioSelId !== null,
   });
@@ -240,11 +241,22 @@ export default function Horarios() {
   const { data: niveles } = useQuery({ queryKey: ['niveles-grid'], queryFn: () => fetchAll<Nivel>('/niveles') });
 
   useEffect(() => {
-    if (horarios && horarios.length > 0 && horarioSelId === null) setHorarioSelId(horarios[0].id);
+    if (horarios && horarios.length > 0 && !horarios.find(h => h.id === horarioSelId)) setHorarioSelId(horarios[0].id);
+    if (horarios?.length === 0) setHorarioSelId(null);
   }, [horarios]);
 
   const mutEliminar = useMutation({
     mutationFn: (id: number) => clienteApi.delete(`/horarios/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['horarios'] }); setHorarioSelId(null); },
+  });
+
+  const mutArchivarTodos = useMutation({
+    mutationFn: () => clienteApi.post('/horarios/archivar-todos'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['horarios'] }); setHorarioSelId(null); },
+  });
+
+  const mutBorrarHistorial = useMutation({
+    mutationFn: () => clienteApi.delete('/horarios/historial'),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['horarios'] }); setHorarioSelId(null); },
   });
 
@@ -268,17 +280,40 @@ export default function Horarios() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {horarioSelId && (
-            <button onClick={() => { if (confirm('Eliminar este horario?')) mutEliminar.mutate(horarioSelId); }}
-              className="px-3 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">
-              Eliminar
+          {tab === 'activos' ? (
+            <>
+              {horarios && horarios.length > 0 && (
+                <button onClick={() => { if (confirm('¿Seguro que deseas archivar todos los horarios activos? (Fin de periodo)')) mutArchivarTodos.mutate(); }}
+                  disabled={mutArchivarTodos.isPending}
+                  className="px-4 py-2 text-sm text-yellow-700 bg-yellow-100 rounded-xl hover:bg-yellow-200">
+                  {mutArchivarTodos.isPending ? 'Archivando...' : 'Archivar todos (Fin de periodo)'}
+                </button>
+              )}
+              {horarioSelId && (
+                <button onClick={() => { if (confirm('Eliminar este horario?')) mutEliminar.mutate(horarioSelId); }}
+                  className="px-3 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">
+                  Eliminar
+                </button>
+              )}
+              <button onClick={() => setMostrarModal(true)}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                + Generar con IA
+              </button>
+            </>
+          ) : (
+            <button onClick={() => { if (confirm('¿Seguro que deseas borrar TODO el historial definitivamente?')) mutBorrarHistorial.mutate(); }}
+              disabled={mutBorrarHistorial.isPending}
+              className="px-4 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-60">
+              {mutBorrarHistorial.isPending ? 'Borrando...' : 'Borrar Historial'}
             </button>
           )}
-          <button onClick={() => setMostrarModal(true)}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700">
-            + Generar con IA
-          </button>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit">
+        <button onClick={() => setTab('activos')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'activos' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Activos</button>
+        <button onClick={() => setTab('historial')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'historial' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Historial</button>
       </div>
 
       {/* Controles */}

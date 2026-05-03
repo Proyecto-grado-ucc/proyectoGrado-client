@@ -41,12 +41,35 @@ export class HorariosControlador {
   @ApiOperation({ summary: 'Listar horarios generados paginado' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'size', required: false, example: 20 })
+  @ApiQuery({ name: 'archivado', required: false, type: Boolean })
   @ApiResponse({ status: 200, type: RespuestaPaginadaHorarioDto })
   listar(
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
     @Query('size', new ParseIntPipe({ optional: true })) size = 20,
+    @Query('archivado') archivado?: string,
   ): Promise<RespuestaPaginadaHorarioDto> {
-    return this.horariosServicio.listar(page, size);
+    const isArchivado = archivado === 'true' ? true : archivado === 'false' ? false : undefined;
+    return this.horariosServicio.listar(page, size, isArchivado);
+  }
+
+  @Roles(RolNombre.Admin)
+  @Delete('historial')
+  @Auditar('HORARIO')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar todos los horarios archivados' })
+  @ApiResponse({ status: 204 })
+  borrarHistorial(): Promise<void> {
+    return this.horariosServicio.borrarHistorial();
+  }
+
+  @Roles(RolNombre.Admin)
+  @Post('archivar-todos')
+  @Auditar('HORARIO')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Archivar todos los horarios activos' })
+  @ApiResponse({ status: 200 })
+  archivarTodos(): Promise<void> {
+    return this.horariosServicio.archivarTodos();
   }
 
   @Get(':id')

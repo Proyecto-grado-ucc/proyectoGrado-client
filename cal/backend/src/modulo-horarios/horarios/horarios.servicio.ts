@@ -65,8 +65,10 @@ export class HorariosServicio {
     return this.mapear(await this.horarioRepo.save(horario));
   }
 
-  async listar(page: number, size: number): Promise<RespuestaPaginadaHorarioDto> {
+  async listar(page: number, size: number, archivado?: boolean): Promise<RespuestaPaginadaHorarioDto> {
+    const where = archivado !== undefined ? { archivado } : {};
     const [items, total] = await this.horarioRepo.findAndCount({
+      where,
       order: { creadoEn: 'DESC' },
       skip: (page - 1) * size,
       take: size,
@@ -84,6 +86,14 @@ export class HorariosServicio {
     const h = await this.horarioRepo.findOne({ where: { id } });
     if (!h) throw new NotFoundException(`Horario ${id} no encontrado`);
     await this.horarioRepo.remove(h);
+  }
+
+  async archivarTodos(): Promise<void> {
+    await this.horarioRepo.update({ archivado: false }, { archivado: true });
+  }
+
+  async borrarHistorial(): Promise<void> {
+    await this.horarioRepo.delete({ archivado: true });
   }
 
   private async cargarEntrada(): Promise<EntradaMotor> {
@@ -123,6 +133,7 @@ export class HorariosServicio {
       fitness: h.fitness,
       generaciones: h.generaciones,
       tiempoMs: h.tiempoMs,
+      archivado: h.archivado,
       creadoEn: h.creadoEn,
     };
   }

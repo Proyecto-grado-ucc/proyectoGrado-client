@@ -28,6 +28,8 @@ export default function HorarioEstudiante() {
   const queryClient = useQueryClient();
   const [codigoIngresado, setCodigoIngresado] = useState('');
   const [errorMatricula, setErrorMatricula] = useState('');
+  const [mostrarModalBaja, setMostrarModalBaja] = useState(false);
+  const [confirmacionBaja, setConfirmacionBaja] = useState('');
 
   const { data: estudiantes } = useQuery({ queryKey: ['estudiantes-he'], queryFn: () => fetchAll<Estudiante>('/estudiantes') });
   const miEstudiante = estudiantes?.find(e => e.usuarioEmail === email);
@@ -41,6 +43,15 @@ export default function HorarioEstudiante() {
     },
     onError: (e: any) => {
       setErrorMatricula(e?.response?.data?.message ?? 'Error al matricularse');
+    }
+  });
+
+  const mutDesmatricular = useMutation({
+    mutationFn: () => clienteApi.post('/estudiantes/desmatricular'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estudiantes-he'] });
+      setMostrarModalBaja(false);
+      setConfirmacionBaja('');
     }
   });
 
@@ -171,8 +182,44 @@ export default function HorarioEstudiante() {
         </div>
         <div className="flex items-center gap-3">
           <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Inscrito</span>
+          <button onClick={() => setMostrarModalBaja(true)} className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 text-xs rounded-full font-medium transition-colors">
+            Darme de baja
+          </button>
         </div>
       </div>
+
+      {mostrarModalBaja && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">¿Seguro que deseas darte de baja?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Perderás acceso a este horario y a tus evaluaciones docentes actuales. Deberás volver a ingresar un código de acceso para reingresar.
+            </p>
+            <p className="text-xs text-gray-600 font-semibold mb-2">
+              Escribe "<span className="text-red-600 select-all">Confirmo darme de baja</span>" para continuar:
+            </p>
+            <input
+              type="text"
+              value={confirmacionBaja}
+              onChange={e => setConfirmacionBaja(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 text-center mb-4"
+              placeholder="Confirmo darme de baja"
+            />
+            <div className="flex gap-2 justify-center">
+              <button onClick={() => { setMostrarModalBaja(false); setConfirmacionBaja(''); }} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button
+                onClick={() => mutDesmatricular.mutate()}
+                disabled={confirmacionBaja.trim().toLowerCase() !== 'confirmo darme de baja' || mutDesmatricular.isPending}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {mutDesmatricular.isPending ? 'Procesando...' : 'Darme de baja'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         <table className="w-full text-xs border-collapse">
