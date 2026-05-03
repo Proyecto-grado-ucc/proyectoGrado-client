@@ -246,12 +246,13 @@ function TablaFranjas() {
   );
 }
 
-function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar }: {
+function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar, camposCrear }: {
   ruta: string;
   columnas: string[];
   campos: Campo[];
   titulo: string;
   camposEditar?: Campo[];
+  camposCrear?: Campo[];
 }) {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
@@ -334,7 +335,7 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar }: {
   };
 
   const guardar = () => {
-    const camposForm = editando ? (camposEditar ?? campos) : campos;
+    const camposForm = editando ? (camposEditar ?? campos) : (camposCrear ?? campos);
     const vacio = camposForm.find(c => !form[c.key]);
     if (vacio) { setError('Todos los campos son obligatorios.'); return; }
     const body: Record<string, string | number> = {};
@@ -347,7 +348,7 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar }: {
   };
 
   const totalPaginas = data ? Math.ceil(data.total / 10) : 1;
-  const camposForm = editando ? (camposEditar ?? campos) : campos;
+  const camposForm = editando ? (camposEditar ?? campos) : (camposCrear ?? campos);
 
   return (
     <div>
@@ -498,6 +499,12 @@ export default function Configuracion() {
         { key: 'jornada', label: 'Jornada', opciones: [{value:'MANANA',label:'Manana'},{value:'TARDE',label:'Tarde'},{value:'NOCHE',label:'Noche'}] },
         { key: 'codigoAcceso', label: 'Codigo Acceso' },
       ],
+      camposCrear: [
+        { key: 'codigo', label: 'Codigo' },
+        { key: 'cursoId', label: 'Curso', type: 'number', opcionesRuta: '/cursos', opcionesLabel: 'nombre', opcionesValue: 'id' },
+        { key: 'cupoMax', label: 'Cupo maximo', type: 'number' },
+        { key: 'jornada', label: 'Jornada', opciones: [{value:'MANANA',label:'Manana'},{value:'TARDE',label:'Tarde'},{value:'NOCHE',label:'Noche'}] },
+      ],
       camposEditar: [
         { key: 'codigo', label: 'Codigo' },
         { key: 'cursoId', label: 'Curso', type: 'number', opcionesRuta: '/cursos', opcionesLabel: 'nombre', opcionesValue: 'id' },
@@ -565,6 +572,7 @@ export default function Configuracion() {
           titulo={configuraciones[tabActivo]!.titulo}
           columnas={configuraciones[tabActivo]!.columnas}
           campos={configuraciones[tabActivo]!.campos}
+          camposCrear={configuraciones[tabActivo]!.camposCrear}
           camposEditar={configuraciones[tabActivo]!.camposEditar}
         />
       ) : null}
