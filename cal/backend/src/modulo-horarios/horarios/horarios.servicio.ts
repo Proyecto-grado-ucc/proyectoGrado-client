@@ -34,7 +34,7 @@ export class HorariosServicio {
     const periodo = await this.periodoRepo.findOne({ where: { id: dto.periodoId } });
     if (!periodo) throw new NotFoundException(`Periodo ${dto.periodoId} no encontrado`);
 
-    const entrada = await this.cargarEntrada();
+    const entrada = await this.cargarEntrada(dto.excluirTiposAula);
     if (!entrada.grupos.length) throw new BadRequestException('No hay grupos registrados para generar horario');
     if (!entrada.docentes.length) throw new BadRequestException('No hay docentes registrados');
     if (!entrada.aulas.length) throw new BadRequestException('No hay aulas registradas');
@@ -96,11 +96,17 @@ export class HorariosServicio {
     await this.horarioRepo.delete({ archivado: true });
   }
 
-  private async cargarEntrada(): Promise<EntradaMotor> {
+  private async cargarEntrada(excluirTiposAula?: string[]): Promise<EntradaMotor> {
+    const aulasWhere: any = { activa: true };
+    if (excluirTiposAula && excluirTiposAula.length > 0) {
+      const { Not, In } = require('typeorm');
+      aulasWhere.tipo = Not(In(excluirTiposAula));
+    }
+
     const [grupos, docentes, aulas, franjas, disponibilidades] = await Promise.all([
       this.grupoRepo.find(),
       this.docenteRepo.find(),
-      this.aulaRepo.find({ where: { activa: true } }),
+      this.aulaRepo.find({ where: aulasWhere }),
       this.franjaRepo.find(),
       this.dispRepo.find({ where: { disponible: true } }),
     ]);

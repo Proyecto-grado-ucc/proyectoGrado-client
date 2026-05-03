@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNumber, IsObject, IsOptional, Max, Min } from 'class-validator';
+import { IsArray, IsInt, IsNumber, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class ConfiguracionMotorDto {
   @ApiProperty({ example: 50, required: false })
@@ -36,4 +36,10 @@ export class GenerarHorarioDto {
   @IsObject()
   @IsOptional()
   configuracion?: ConfiguracionMotorDto;
+
+  @ApiProperty({ type: [String], required: false })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  excluirTiposAula?: string[];
 }

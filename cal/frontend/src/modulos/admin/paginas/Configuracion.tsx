@@ -376,9 +376,20 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar, camposCre
             <tbody className="divide-y divide-gray-50">
               {data?.items?.map((item: Record<string, unknown>) => (
                 <tr key={item.id as number} className="hover:bg-gray-50">
-                  {campos.map(c => (
-                    <td key={c.key} className="px-4 py-3 text-gray-700">{String(item[c.key] ?? '')}</td>
-                  ))}
+                  {campos.map(c => {
+                    let valDisplay = String(item[c.key] ?? '');
+                    if (c.opcionesRuta === '/niveles' && nivelesQuery.data) {
+                      const found = nivelesQuery.data.find((n: any) => String(n[c.opcionesValue ?? 'id']) === valDisplay);
+                      if (found) valDisplay = String(found[c.opcionesLabel ?? 'nombre']);
+                    } else if (c.opcionesRuta === '/cursos' && cursosQuery.data) {
+                      const found = cursosQuery.data.find((x: any) => String(x[c.opcionesValue ?? 'id']) === valDisplay);
+                      if (found) valDisplay = String(found[c.opcionesLabel ?? 'nombre']);
+                    } else if (c.opciones) {
+                      const found = c.opciones.find(o => o.value === valDisplay);
+                      if (found) valDisplay = found.label;
+                    }
+                    return <td key={c.key} className="px-4 py-3 text-gray-700">{valDisplay}</td>;
+                  })}
                   <td className="px-4 py-3 flex gap-3">
                     <button onClick={() => abrirEditar(item)} className="text-xs text-blue-600 hover:underline">Editar</button>
                     <button onClick={() => { if (confirm('Eliminar?')) mutEliminar.mutate(item.id as number); }}
