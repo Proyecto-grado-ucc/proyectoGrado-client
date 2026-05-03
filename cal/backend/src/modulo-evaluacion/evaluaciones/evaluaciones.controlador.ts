@@ -44,7 +44,7 @@ export class EvaluacionesControlador {
     return this.evaluacionesServicio.buscarPorId(id);
   }
 
-  @Roles(RolNombre.Admin)
+
   @Patch(':id')
   @Auditar('EVALUACION')
   @ApiResponse({ status: 200, type: RespuestaEvaluacionDto })

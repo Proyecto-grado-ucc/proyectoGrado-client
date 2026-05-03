@@ -17,7 +17,7 @@ import { RespuestasServicio } from './respuestas.servicio';
 export class RespuestasControlador {
   constructor(private readonly respuestasServicio: RespuestasServicio) { }
 
-  @Roles(RolNombre.Admin)
+
   @Post()
   @Auditar('RESPUESTA')
   @ApiResponse({ status: 201, type: DetalleRespuestaDto })
