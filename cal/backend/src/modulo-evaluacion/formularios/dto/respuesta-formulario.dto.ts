@@ -7,6 +7,7 @@ export class RespuestaFormularioDto {
   @ApiProperty() periodoId: number;
   @ApiProperty() periodoNombre: string;
   @ApiProperty() activo: boolean;
+  @ApiProperty({ required: false }) dimensiones?: any[];
 }
 
 export class RespuestaPaginadaFormularioDto {

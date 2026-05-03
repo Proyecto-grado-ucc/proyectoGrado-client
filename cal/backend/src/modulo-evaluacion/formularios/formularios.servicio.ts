@@ -65,8 +65,22 @@ export class FormulariosServicio {
   }
 
   async buscarPorId(id: number): Promise<RespuestaFormularioDto> {
-    const f = await this.formularioRepo.findOne({ where: { id } });
+    const f = await this.formularioRepo.findOne({
+      where: { id },
+      relations: ['dimensiones', 'dimensiones.preguntas'],
+    });
     if (!f) throw new NotFoundException(`Formulario ${id} no encontrado`);
+    
+    // Sort dimensions and questions if they exist
+    if (f.dimensiones && Array.isArray(f.dimensiones)) {
+      f.dimensiones.sort((a: any, b: any) => a.id - b.id);
+      f.dimensiones.forEach((d: any) => {
+        if (d.preguntas && Array.isArray(d.preguntas)) {
+          d.preguntas.sort((p1: any, p2: any) => p1.ordenIdx - p2.ordenIdx);
+        }
+      });
+    }
+    
     return this.mapear(f);
   }
 
@@ -91,6 +105,14 @@ export class FormulariosServicio {
   }
 
   private mapear(f: Formulario): RespuestaFormularioDto {
-    return { id: f.id, titulo: f.titulo, descripcion: f.descripcion, periodoId: f.periodo.id, periodoNombre: f.periodo.nombre, activo: f.activo };
+    return { 
+      id: f.id, 
+      titulo: f.titulo, 
+      descripcion: f.descripcion, 
+      periodoId: f.periodo.id, 
+      periodoNombre: f.periodo.nombre, 
+      activo: f.activo,
+      dimensiones: f.dimensiones as any[] 
+    };
   }
 }
