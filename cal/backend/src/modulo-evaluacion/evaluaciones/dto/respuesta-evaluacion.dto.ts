@@ -11,6 +11,7 @@ export class RespuestaEvaluacionDto {
   @ApiProperty({ enum: EstadoEvaluacion }) estado: EstadoEvaluacion;
   @ApiProperty() creadoEn: Date;
   @ApiProperty({ type: [Number], required: false }) estudiantesCompletaron?: number[];
+  @ApiProperty({ type: [String], required: false }) comentariosAnonimos?: string[];
 }
 
 export class RespuestaPaginadaEvaluacionDto {

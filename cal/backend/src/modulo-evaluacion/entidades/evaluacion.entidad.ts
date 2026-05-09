@@ -27,6 +27,9 @@ export class Evaluacion {
   @Column({ type: 'int', array: true, default: [] })
   estudiantesCompletaron: number[];
 
+  @Column({ type: 'text', array: true, default: [] })
+  comentariosAnonimos: string[];
+
   @Column({ type: 'enum', enum: EstadoEvaluacion, default: EstadoEvaluacion.Pendiente })
   estado: EstadoEvaluacion;
 

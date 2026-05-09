@@ -75,8 +75,9 @@ export class EvaluacionesControlador {
   @ApiResponse({ status: 200, type: RespuestaEvaluacionDto })
   completarPorEstudiante(
     @Param('id', ParseIntPipe) id: number, 
-    @Body('estudianteId', ParseIntPipe) estudianteId: number
+    @Body('estudianteId', ParseIntPipe) estudianteId: number,
+    @Body('comentario') comentario?: string
   ): Promise<RespuestaEvaluacionDto> {
-    return this.evaluacionesServicio.marcarCompletadaPorEstudiante(id, estudianteId);
+    return this.evaluacionesServicio.marcarCompletadaPorEstudiante(id, estudianteId, comentario);
   }
 }

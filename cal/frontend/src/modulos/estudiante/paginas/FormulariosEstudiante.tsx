@@ -22,6 +22,8 @@ export default function FormulariosEstudiante() {
   
   const [evaluacionActiva, setEvaluacionActiva] = useState<Evaluacion | null>(null);
   const [respuestas, setRespuestas] = useState<Record<number, string | number>>({});
+  const [comentarioFinal, setComentarioFinal] = useState('');
+  const [sinComentario, setSinComentario] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
   const { data: estudiantes } = useQuery({ queryKey: ['estudiantes-fe'], queryFn: () => fetchAll<Estudiante>('/estudiantes') });
@@ -92,12 +94,17 @@ export default function FormulariosEstudiante() {
       
       // Marcarla completada SOLO para mi estudiante
       if (miEstudiante?.id) {
-        await clienteApi.post(`/evaluaciones/${evaluacionActiva.id}/completar`, { estudianteId: miEstudiante.id });
+        await clienteApi.post(`/evaluaciones/${evaluacionActiva.id}/completar`, { 
+          estudianteId: miEstudiante.id,
+          comentario: sinComentario ? undefined : comentarioFinal
+        });
       }
       
       qc.invalidateQueries({ queryKey: ['evaluaciones-fe'] });
       setEvaluacionActiva(null);
       setRespuestas({});
+      setComentarioFinal('');
+      setSinComentario(false);
       alert('Evaluación enviada con éxito. ¡Gracias!');
     } catch (error) {
       alert('Hubo un error enviando la evaluación. Intenta de nuevo.');
@@ -139,7 +146,7 @@ export default function FormulariosEstudiante() {
                   <p className="text-sm text-gray-600">Docente: <span className="font-medium text-gray-900">{e.docenteEvaluadoNombre}</span></p>
                 </div>
                 <button 
-                  onClick={() => { setEvaluacionActiva(e); setRespuestas({}); }}
+                  onClick={() => { setEvaluacionActiva(e); setRespuestas({}); setComentarioFinal(''); setSinComentario(false); }}
                   className="mt-6 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
                 >
                   Iniciar evaluación
@@ -229,10 +236,49 @@ export default function FormulariosEstudiante() {
             </div>
           ))}
 
+          {/* Sección de Comentarios Adicionales */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+              <h2 className="font-bold text-gray-800">Comentarios Adicionales</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm font-medium text-gray-800">¿Deseas dejar algún comentario adicional para el docente? (Será completamente anónimo)</p>
+              
+              <textarea
+                value={comentarioFinal}
+                onChange={e => setComentarioFinal(e.target.value)}
+                disabled={sinComentario}
+                placeholder="Escribe al menos 30 caracteres..."
+                rows={4}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+              />
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sinComentario"
+                  checked={sinComentario}
+                  onChange={(e) => {
+                    setSinComentario(e.target.checked);
+                    if (e.target.checked) setComentarioFinal('');
+                  }}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="sinComentario" className="text-sm text-gray-700 cursor-pointer">
+                  No deseo añadir comentarios adicionales
+                </label>
+              </div>
+
+              {!sinComentario && comentarioFinal.length > 0 && comentarioFinal.length < 30 && (
+                <p className="text-xs text-red-500">El comentario debe tener al menos 30 caracteres (actual: {comentarioFinal.length}).</p>
+              )}
+            </div>
+          </div>
+
           <div className="flex justify-end pt-4">
             <button 
               onClick={enviarEvaluacion} 
-              disabled={!esCompleta || enviando}
+              disabled={!esCompleta || enviando || (!sinComentario && comentarioFinal.length < 30)}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium px-8 py-3 rounded-xl transition-all shadow-sm flex items-center gap-2"
             >
               {enviando ? 'Enviando...' : 'Enviar Evaluación'}
