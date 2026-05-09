@@ -1,97 +1,79 @@
-# Sistema CAL — Cambridge Academy of Languages
+# 🎓 Cambridge Academy of Languages — Sistema de Gestión (Frontend)
 
-Academic management system with AI-powered schedule generation and digital teacher evaluation.
+Repositorio del **cliente web** del sistema de gestión académica CAL. Construido con React + TypeScript + Vite.
 
-## Tech Stack
+## 🖥️ Stack Tecnológico
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | TypeScript + NestJS 10 + TypeORM |
-| Database | PostgreSQL 16 |
-| Frontend | React 18 + Vite 5 + TailwindCSS |
-| State/Fetch | TanStack Query + Zustand |
-| Charts | Recharts |
-| Auth | JWT |
-| AI | Gemini Flash 2.5 + Genetic Algorithm + Tabu Search |
+| Tecnología | Versión | Uso |
+|---|---|---|
+| React | 18 | Framework de UI |
+| TypeScript | 5.3 | Tipado estático |
+| Vite | 5.1 | Bundler y dev server |
+| TanStack Query | 5 | Fetching y caché de datos |
+| React Router | 6 | Navegación SPA |
+| Zustand | 4 | Estado global (auth) |
+| Axios | 1.6 | Cliente HTTP |
+| Recharts | 2 | Gráficas y estadísticas |
+| Tailwind CSS | 3 | Estilos utilitarios |
 
-## Requirements
+## 📦 Estructura del Proyecto
 
-- Docker and Docker Compose
+```
+src/
+├── compartido/         # Utilidades y cliente API (Axios)
+├── modulos/
+│   ├── admin/          # Vistas del administrador
+│   │   ├── paginas/    # Dashboard, Horarios, Evaluación, Configuración...
+│   │   └── layout/
+│   ├── docente/        # Vistas del docente (dashboard, evaluaciones)
+│   └── estudiante/     # Vistas del estudiante (horario, evaluaciones)
+└── seguridad/          # Autenticación, guards, store Zustand
+```
+
+## 🚀 Instalación y Ejecución
+
+### Prerrequisitos
 - Node.js 20+
+- Backend corriendo en `http://localhost:3000/api` → ver [proyectoGrado-server](https://github.com/Proyecto-grado-ucc/proyectoGrado-server)
 
-## Quick Start
+### Pasos
 
-### 1. Clone and configure
 ```bash
-git clone [repo-url]
-cd actividad2-compiladores
-cp .env.example .env
-# Edit .env with your values
-```
+# 1. Clonar el repositorio
+git clone -b client https://github.com/Proyecto-grado-ucc/proyectoGrado-client.git
+cd proyectoGrado-client/cal/frontend
 
-### 2. Start database
-```bash
-docker-compose up db
-```
-
-### 3. Start backend
-```bash
-cd cal/backend
+# 2. Instalar dependencias
 npm install
-npm run start:dev
-```
 
-### 4. Start frontend (new terminal)
-```bash
-cd cal/frontend
-npm install
+# 3. Levantar en modo desarrollo
 npm run dev
 ```
 
-## Services
+La app estará disponible en **http://localhost:5173**
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:5173 |
-| API REST | http://localhost:3000/api |
-| Swagger Docs | http://localhost:3000/api/docs |
-| PostgreSQL | localhost:5432 |
+### Scripts disponibles
 
-## Default Admin Account
-**Email:** admin@cambridge.edu.co
-**Password:** Admin123!
+```bash
+npm run dev        # Servidor de desarrollo (Vite HMR)
+npm run build      # Build de producción
+npm run preview    # Previsualizar el build
+npm run test       # Ejecutar tests con Vitest
+npm run lint       # Revisar errores ESLint
+```
 
-## Modules
+## 🔐 Roles de Usuario
 
-### Module 1 — AI Schedule Generation
-- Gemini Flash 2.5 optimizes genetic algorithm hyperparameters
-- Genetic Algorithm + Tabu Search generates conflict-free schedules
-- Hard constraints: no teacher/room double-booking, capacity limits
-- Soft constraints: consecutive hours, balanced distribution
+| Rol | Acceso |
+|---|---|
+| **Administrador** | Configuración completa, generación de horarios, evaluaciones, KDD |
+| **Docente** | Dashboard personal, resultados de evaluaciones, comentarios anónimos |
+| **Estudiante** | Horario de grupo, inscripción/baja, evaluación docente |
 
-### Module 2 — Teacher Evaluation
-- Dynamic form builder with dimensions and weighted questions
-- Anonymous student responses (Likert 1-5 + open text)
-- KDD pipeline for statistical analysis
-- Automated alerts for low-performing teachers
-- Gerencial dashboard with historical comparison
+## 🌐 Variables de Entorno
 
-### User Roles
-| Role | Access |
-|------|--------|
-| Admin | Full system access |
-| Docente | Own schedule + own evaluation results |
-| Estudiante | Group schedule + pending evaluation forms |
+El frontend no requiere `.env`. La URL base del API está configurada en `src/compartido/api.ts` apuntando a `http://localhost:3000/api`.
 
-## Development Phases
-| Phase | Name | Status |
-|-------|------|--------|
-| 0 | Bootstrap | ✅ Complete |
-| 1 | Security (Auth/RBAC/AuditLog) | ✅ Complete |
-| 2 | Shared + Master Data | ✅ Complete |
-| 3 | Module 1: AI Engine | ✅ Complete |
-| 4 | Module 1: Gemini Integration | ✅ Complete |
-| 5 | Module 2: Forms & Collection | ✅ Complete |
-| 6 | Module 2: KDD + Alerts + Dashboard | ✅ Complete |
-| 7 | Complete Frontend | ✅ Complete |
-| 8 | Hardening | ✅ Complete |
+## 🔗 Repositorio Backend
+
+El backend del sistema se encuentra en: [proyectoGrado-server](https://github.com/Proyecto-grado-ucc/proyectoGrado-server)
