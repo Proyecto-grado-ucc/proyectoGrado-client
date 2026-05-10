@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface Periodo { id: number; nombre: string; fechaInicio: string; fechaFin: string; }
 interface Asignacion { grupoId: number; docenteId: number; aulaId: number; franjaId: number; }
@@ -162,7 +163,8 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
   const [dropError, setDropError] = useState('');
   const dragIdxRef = useRef<number | null>(null);
 
-  useEffect(() => { setAsignaciones(horario.asignaciones); }, [horario]);
+  // Solo reiniciar asignaciones cuando cambia el ID del horario (no en cada re-render)
+  useEffect(() => { setAsignaciones(horario.asignaciones); }, [horario.id]);
 
   const diasPresentes = [...new Set(franjas.map(f => f.diaSemana))].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
   const getHoraParaSort = (bloque: number) => { const f = franjas.find(x => x.bloqueIdx === bloque); return f ? f.horaInicio : '23:59:59'; };
@@ -303,51 +305,101 @@ export default function Horarios() {
 
   const mutGuardarAsig = useMutation({
     mutationFn: (asigs: Asignacion[]) => clienteApi.patch(`/horarios/${horarioSelId}/asignaciones`, { asignaciones: asigs }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['horario', horarioSelId] }),
+    // No invalidamos la query para no resetear el estado local de drag & drop
   });
 
-  const exportarExcel = () => {
+  const exportarExcel = async () => {
     if (!horarioDetalle || !franjas || !grupos || !docentes || !aulas || !cursos || !niveles) return;
     const diasP = [...new Set(franjas.map(f => f.diaSemana))].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
     const getHorS = (b: number) => { const f = franjas.find(x => x.bloqueIdx === b); return f ? f.horaInicio : '23:59:59'; };
     const bloques = [...new Set(franjas.map(f => f.bloqueIdx))].sort((a, b) => getHorS(a).localeCompare(getHorS(b)));
     const getAsig = (dia: string, blq: number) => { const fId = franjas.find(f => f.diaSemana === dia && f.bloqueIdx === blq)?.id; return fId ? horarioDetalle.asignaciones.find(a => a.franjaId === fId) : null; };
-    const getColor = (asig: Asignacion) => { const g = grupos.find(x => x.id === asig.grupoId); const c = cursos.find(x => x.id === g?.cursoId); const n = niveles.find(x => x.id === c?.nivelId); return NIVEL_COLOR[n?.codigo ?? ''] ?? '#6b7280'; };
-    const COLORES_NIVEL: Record<string, string> = { '#3b82f6': 'FF93C5F0', '#8b5cf6': 'FFCBB5FA', '#10b981': 'FF6EE7B7', '#f59e0b': 'FFFDE68A', '#ec4899': 'FFFBCFE8', '#6b7280': 'FFD1D5DB' };
-    const header = ['Horario', ...diasP.map(d => DIAS[d] ?? d)];
-    const rows = bloques.map(blq => {
-      const f = franjas.find(x => x.bloqueIdx === blq);
-      const hora = f ? `${f.horaInicio.substring(0,5)}-${f.horaFin.substring(0,5)}` : `Bloque ${blq}`;
-      return [hora, ...diasP.map(dia => {
-        const a = getAsig(dia, blq); if (!a) return '';
-        const g = grupos.find(x => x.id === a.grupoId); const d = docentes.find(x => x.id === a.docenteId); const au = aulas.find(x => x.id === a.aulaId);
-        return `${g?.cursoNombre ?? ''} (${g?.codigo ?? ''})
-${d?.usuarioNombre ?? ''}
-${au?.codigo ?? ''}`;
-      })];
+    const COLORES_HEX: Record<string, string> = { '#3b82f6': 'FF93C5F0', '#8b5cf6': 'FFCBB5FA', '#10b981': 'FF6EE7B7', '#f59e0b': 'FFFDE68A', '#ec4899': 'FFFBCFE8', '#6b7280': 'FFD1D5DB' };
+    const getArgb = (asig: Asignacion) => { const g = grupos.find(x => x.id === asig.grupoId); const c = cursos.find(x => x.id === g?.cursoId); const n = niveles.find(x => x.id === c?.nivelId); const hex = NIVEL_COLOR[n?.codigo ?? ''] ?? '#6b7280'; return COLORES_HEX[hex] ?? 'FFD1D5DB'; };
+    const getNivel = (asig: Asignacion) => { const g = grupos.find(x => x.id === asig.grupoId); const c = cursos.find(x => x.id === g?.cursoId); const n = niveles.find(x => x.id === c?.nivelId); return n?.codigo ?? ''; };
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Sistema CAL';
+    const ws = wb.addWorksheet(horarioActual?.periodoNombre ?? 'Horario', { pageSetup: { fitToPage: true, orientation: 'landscape' } });
+
+    // Titulo
+    ws.mergeCells(1, 1, 1, diasP.length + 1);
+    const titleCell = ws.getCell(1, 1);
+    titleCell.value = `Horario Academico - ${horarioActual?.periodoNombre ?? ''} | Generado: ${new Date().toLocaleDateString('es-CO')}`;
+    titleCell.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(1).height = 28;
+
+    // Leyenda de colores
+    const nivelesConColor = Object.entries(NIVEL_COLOR);
+    ws.mergeCells(2, 1, 2, diasP.length + 1);
+    const legendCell = ws.getCell(2, 1);
+    legendCell.value = 'Colores por nivel: ' + nivelesConColor.map(([n]) => n).join('  |  ');
+    legendCell.font = { italic: true, size: 9, color: { argb: 'FF374151' } };
+    legendCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
+    legendCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(2).height = 18;
+
+    // Encabezado de columnas
+    const headerRow = ws.getRow(3);
+    headerRow.values = ['Horario', ...diasP.map(d => DIAS[d] ?? d)];
+    headerRow.eachCell(cell => {
+      cell.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = { top: { style: 'thin', color: { argb: 'FFBFDBFE' } }, bottom: { style: 'thin', color: { argb: 'FFBFDBFE' } }, left: { style: 'thin', color: { argb: 'FFBFDBFE' } }, right: { style: 'thin', color: { argb: 'FFBFDBFE' } } };
     });
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    // Apply styles
-    const range = XLSX.utils.decode_range(ws['!ref'] ?? 'A1');
-    for (let R = 1; R <= range.e.r; R++) {
-      for (let C = 1; C <= range.e.c; C++) {
-        const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
-        if (cell && cell.v) {
-          const dia = diasP[C - 1]; const blq = bloques[R - 1];
-          const a = getAsig(dia, blq);
-          if (a) { const hex = getColor(a); const argb = COLORES_NIVEL[hex] ?? 'FFE5E7EB';
-            cell.s = { fill: { fgColor: { rgb: argb } }, font: { bold: false, sz: 9 }, alignment: { wrapText: true, vertical: 'top' }, border: { top: {style:'thin'}, bottom: {style:'thin'}, left: {style:'thin'}, right: {style:'thin'} } };
-          }
+    headerRow.height = 22;
+
+    // Filas de datos
+    bloques.forEach((blq, rowIdx) => {
+      const f = franjas.find(x => x.bloqueIdx === blq);
+      const hora = f ? `${f.horaInicio.substring(0, 5)} - ${f.horaFin.substring(0, 5)}` : `Bloque ${blq}`;
+      const excelRow = ws.getRow(4 + rowIdx);
+      excelRow.height = 72;
+
+      // Celda de hora
+      const horaCell = excelRow.getCell(1);
+      horaCell.value = hora;
+      horaCell.font = { bold: true, size: 10 };
+      horaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
+      horaCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      horaCell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+      // Celdas de dias
+      diasP.forEach((dia, colIdx) => {
+        const a = getAsig(dia, blq);
+        const cell = excelRow.getCell(2 + colIdx);
+        if (a) {
+          const g = grupos.find(x => x.id === a.grupoId);
+          const d = docentes.find(x => x.id === a.docenteId);
+          const au = aulas.find(x => x.id === a.aulaId);
+          const nivel = getNivel(a);
+          const argb = getArgb(a);
+          cell.value = {
+            richText: [
+              { text: `${g?.cursoNombre ?? `Grupo ${a.grupoId}`}\n`, font: { bold: true, size: 10 } },
+              { text: `📋 ${g?.codigo ?? ''}  •  Nivel: ${nivel}\n`, font: { size: 9 } },
+              { text: `👤 ${d?.usuarioNombre ?? ''}\n`, font: { size: 9, italic: true } },
+              { text: `🏫 ${au?.codigo ?? ''}  (${au?.tipo ?? ''})`, font: { size: 9 } },
+            ]
+          };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb } };
+          cell.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
         }
-      }
-    }
-    // Header style
-    header.forEach((_, C) => { const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })]; if (cell) cell.s = { font: { bold: true, color: { rgb: 'FFFFFFFF' } }, fill: { fgColor: { rgb: 'FF1E40AF' } }, alignment: { horizontal: 'center' } }; });
-    ws['!cols'] = [{ wch: 14 }, ...diasP.map(() => ({ wch: 28 }))];
-    ws['!rows'] = [{ hpt: 20 }, ...bloques.map(() => ({ hpt: 60 }))];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, horarioActual?.periodoNombre ?? 'Horario');
-    XLSX.writeFile(wb, `horario_${horarioActual?.periodoNombre ?? 'export'}.xlsx`);
+        cell.border = { top: { style: 'thin', color: { argb: 'FFE5E7EB' } }, bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } }, left: { style: 'thin', color: { argb: 'FFE5E7EB' } }, right: { style: 'thin', color: { argb: 'FFE5E7EB' } } };
+      });
+    });
+
+    // Anchos de columna
+    ws.getColumn(1).width = 16;
+    diasP.forEach((_, i) => { ws.getColumn(2 + i).width = 30; });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `horario_${horarioActual?.periodoNombre ?? 'export'}.xlsx`);
   };
 
   const exportarPdf = () => window.print();
