@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../seguridad/store';
 
 interface Estudiante { id: number; usuarioEmail: string; grupoId: number; }
@@ -105,9 +106,9 @@ export default function FormulariosEstudiante() {
       setRespuestas({});
       setComentarioFinal('');
       setSinComentario(false);
-      alert('Evaluación enviada con éxito. ¡Gracias!');
+      toast.success('Evaluación enviada con éxito. ¡Gracias!');
     } catch (error) {
-      alert('Hubo un error enviando la evaluación. Intenta de nuevo.');
+      toast.error('Hubo un error enviando la evaluación. Intenta de nuevo.');
       console.error(error);
     } finally {
       setEnviando(false);

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi } from '../../../compartido/api';
+import { useUIStore } from '../../../compartido/storeUI';
 
 const tabs = ['Aulas', 'Niveles', 'Cursos', 'Grupos', 'Franjas', 'Periodos', 'Docentes'];
 
@@ -65,6 +67,7 @@ function parsearValor(valor: string, tipo?: string): string | number {
 
 function TablaFranjas() {
   const qc = useQueryClient();
+  const { abrirConfirmacion } = useUIStore();
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Record<string, unknown> | null>(null);
@@ -100,14 +103,22 @@ function TablaFranjas() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['/franjas-horarias'] }),
   });
 
-  const cargarInstitucionales = async () => {
-    if (!confirm('Esto creara las 25 franjas horarias institucionales de Cambridge. Continuar?')) return;
-    setCargando(true);
-    for (const franja of FRANJAS_INSTITUCIONALES) {
-      try { await crear('/franjas-horarias', franja); } catch { /* ignorar duplicados */ }
-    }
-    qc.invalidateQueries({ queryKey: ['/franjas-horarias'] });
-    setCargando(false);
+  const crearPorDefecto = () => {
+    abrirConfirmacion({
+      titulo: 'Crear franjas por defecto',
+      mensaje: '¿Estás seguro de que deseas crear las 25 franjas horarias institucionales de Cambridge? Esto reemplazará la configuración actual si hay solapamientos.',
+      textoConfirmar: 'Sí, crear franjas',
+      textoCancelar: 'Cancelar',
+      tipo: 'info',
+      onConfirmar: async () => {
+        setCargando(true);
+        for (const franja of FRANJAS_INSTITUCIONALES) {
+          try { await crear('/franjas-horarias', franja); } catch { /* ignorar duplicados */ }
+        }
+        qc.invalidateQueries({ queryKey: ['/franjas-horarias'] });
+        setCargando(false);
+      }
+    });
   };
 
   const abrirEditar = (item: Record<string, unknown>) => {
@@ -145,7 +156,7 @@ function TablaFranjas() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-800">Franjas horarias</h2>
         <div className="flex gap-2">
-          <button onClick={cargarInstitucionales} disabled={cargando}
+          <button onClick={crearPorDefecto} disabled={cargando}
             className="text-xs px-3 py-1.5 border border-blue-300 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50">
             {cargando ? 'Cargando...' : 'Cargar franjas institucionales'}
           </button>
@@ -179,8 +190,21 @@ function TablaFranjas() {
                   <td className="px-4 py-3 text-gray-700">{String(item.bloqueIdx ?? '')}</td>
                   <td className="px-4 py-3 flex gap-3">
                     <button onClick={() => abrirEditar(item)} className="text-xs text-blue-600 hover:underline">Editar</button>
-                    <button onClick={() => { if (confirm('Eliminar franja?')) mutEliminar.mutate(item.id as number); }}
-                      className="text-xs text-red-500 hover:underline">Eliminar</button>
+                    <button 
+                      onClick={() => {
+                        abrirConfirmacion({
+                          titulo: 'Eliminar franja',
+                          mensaje: '¿Estás seguro de eliminar esta franja horaria?',
+                          textoConfirmar: 'Eliminar',
+                          textoCancelar: 'Cancelar',
+                          tipo: 'peligro',
+                          onConfirmar: () => mutEliminar.mutate(item.id as number)
+                        });
+                      }}
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Eliminar
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -202,11 +226,20 @@ function TablaFranjas() {
         )}
       </div>
 
-      {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-4">{editando ? 'Editar franja' : 'Nueva franja'}</h3>
-            <div className="space-y-3">
+      <AnimatePresence>
+        {modal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => { setModal(false); setEditando(null); setError(''); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            >
+              <h3 className="text-xl font-bold text-gray-900 mb-6">{editando ? 'Editar franja' : 'Nueva franja'}</h3>
+              <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Dia de la semana</label>
                 <select value={form.diaSemana} onChange={e => setForm({...form, diaSemana: e.target.value})}
@@ -216,32 +249,33 @@ function TablaFranjas() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Hora inicio</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hora inicio</label>
                   <input type="time" value={form.horaInicio} onChange={e => setForm({...form, horaInicio: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-gray-50 transition-colors" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Hora fin</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hora fin</label>
                   <input type="time" value={form.horaFin} onChange={e => setForm({...form, horaFin: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-gray-50 transition-colors" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Numero de bloque</label>
-                <input type="number" min="1" value={form.bloqueIdx} onChange={e => setForm({...form, bloqueIdx: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Índice del bloque</label>
+                <input type="number" min="1" max="25" value={form.bloqueIdx} onChange={e => setForm({...form, bloqueIdx: e.target.value})}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-gray-50 transition-colors" />
               </div>
-              {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+              {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl">{error}</p>}
             </div>
-            <div className="flex gap-3 mt-5 justify-end">
-              <button onClick={() => { setModal(false); setEditando(null); setError(''); }} className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-              <button onClick={guardar} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <div className="flex gap-3 mt-8 justify-end">
+              <button onClick={() => { setModal(false); setEditando(null); setError(''); }} className="text-sm px-5 py-2.5 font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancelar</button>
+              <button onClick={guardar} className="text-sm px-5 py-2.5 font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm shadow-blue-200 transition-colors">
                 {editando ? 'Guardar cambios' : 'Guardar'}
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -255,6 +289,7 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar, camposCre
   camposCrear?: Campo[];
 }) {
   const qc = useQueryClient();
+  const { abrirConfirmacion } = useUIStore();
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Record<string, unknown> | null>(null);
@@ -392,8 +427,21 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar, camposCre
                   })}
                   <td className="px-4 py-3 flex gap-3">
                     <button onClick={() => abrirEditar(item)} className="text-xs text-blue-600 hover:underline">Editar</button>
-                    <button onClick={() => { if (confirm('Eliminar?')) mutEliminar.mutate(item.id as number); }}
-                      className="text-xs text-red-500 hover:underline">Eliminar</button>
+                    <button 
+                      onClick={() => {
+                        abrirConfirmacion({
+                          titulo: 'Eliminar registro',
+                          mensaje: '¿Estás seguro de eliminar este registro?',
+                          textoConfirmar: 'Eliminar',
+                          textoCancelar: 'Cancelar',
+                          tipo: 'peligro',
+                          onConfirmar: () => mutEliminar.mutate(item.id as number)
+                        });
+                      }}
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Eliminar
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -415,11 +463,20 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar, camposCre
         )}
       </div>
 
-      {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-4">{editando ? 'Editar registro' : 'Nuevo registro'}</h3>
-            <div className="space-y-3">
+      <AnimatePresence>
+        {modal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => { setModal(false); setEditando(null); setError(''); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            >
+              <h3 className="text-xl font-bold text-gray-900 mb-6">{editando ? 'Editar registro' : 'Nuevo registro'}</h3>
+              <div className="space-y-4">
               {camposForm.map(c => {
                 const opciones = resolverOpciones(c);
                 return (
@@ -438,17 +495,18 @@ function TablaGenerica({ ruta, columnas, campos, titulo, camposEditar, camposCre
                   </div>
                 );
               })}
-              {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+              {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl mt-2">{error}</p>}
             </div>
-            <div className="flex gap-3 mt-5 justify-end">
-              <button onClick={() => { setModal(false); setEditando(null); setError(''); }} className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-              <button onClick={guardar} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <div className="flex gap-3 mt-8 justify-end">
+              <button onClick={() => { setModal(false); setEditando(null); setError(''); }} className="text-sm px-5 py-2.5 font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancelar</button>
+              <button onClick={guardar} className="text-sm px-5 py-2.5 font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm shadow-blue-200 transition-colors">
                 {editando ? 'Guardar cambios' : 'Guardar'}
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

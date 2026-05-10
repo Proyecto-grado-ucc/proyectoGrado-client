@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
+import { useUIStore } from '../../../compartido/storeUI';
+import { motion, AnimatePresence } from 'framer-motion';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -56,9 +58,17 @@ function ModalGenerar({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="p-6 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+      >
+        <div className="p-6 border-b border-gray-100 bg-gray-50/50">
           <h2 className="text-lg font-bold text-gray-900">Generar horario con IA</h2>
           <p className="text-sm text-gray-500 mt-0.5">Motor: Algoritmo Genetico + Busqueda Tabu + Gemini</p>
         </div>
@@ -121,7 +131,7 @@ function ModalGenerar({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
               : 'Generar horario'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -170,8 +180,16 @@ function DetalleAsignacion({ asig, grupos, docentes, aulas, franjas, asignacione
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto"
+      >
         <h3 className="font-bold text-gray-900 mb-4 flex items-center justify-between">
           <span>Detalle y Edición</span>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
@@ -211,7 +229,7 @@ function DetalleAsignacion({ asig, grupos, docentes, aulas, franjas, asignacione
             <button onClick={handleGuardar} className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700">Mover Clase</button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -265,12 +283,12 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
 
   return (
     <>
-      {detalle && (
-        <DetalleAsignacion 
-          asig={detalle} grupos={grupos} docentes={docentes} aulas={aulas} franjas={franjas} asignaciones={asignaciones}
-          onMover={handleMoverManual} onClose={() => setDetalle(null)} 
-        />
-      )}
+      {/* Modal Mover */}
+      <AnimatePresence>
+        {detalle && <DetalleAsignacion key="modal-mover" asig={detalle} grupos={grupos} docentes={docentes} aulas={aulas} franjas={franjas} asignaciones={asignaciones} onMover={handleMoverManual} onClose={() => setDetalle(null)} />}
+      </AnimatePresence>
+
+      {/* Titulos de dias */}
       {statusMsg && <div className="mx-4 mt-2 mb-0 px-3 py-2 bg-green-50 text-green-700 text-xs rounded-lg">{statusMsg}</div>}
       {guardando && <div className="mx-4 mt-2 mb-0 px-3 py-2 bg-blue-50 text-blue-600 text-xs rounded-lg flex items-center gap-2"><span className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />Guardando cambios...</div>}
       <div className="overflow-x-auto p-4" id="horario-grilla-print">
@@ -328,6 +346,7 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
 // ── Componente principal ───────────────────────────────────────────────────────
 export default function Horarios() {
   const qc = useQueryClient();
+  const { abrirConfirmacion } = useUIStore();
   const [horarioSelId, setHorarioSelId] = useState<number | null>(null);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [filtroDocente, setFiltroDocente] = useState('');
@@ -463,9 +482,11 @@ export default function Horarios() {
 
   return (
     <div className="p-4 md:p-8 min-h-full bg-gray-50">
-      {mostrarModal && (
-        <ModalGenerar onClose={() => setMostrarModal(false)} onSuccess={() => qc.invalidateQueries({ queryKey: ['horarios'] })} />
-      )}
+      <AnimatePresence>
+        {mostrarModal && (
+          <ModalGenerar key="modal-generar" onClose={() => setMostrarModal(false)} onSuccess={() => qc.invalidateQueries({ queryKey: ['horarios'] })} />
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
@@ -480,14 +501,16 @@ export default function Horarios() {
           {tab === 'activos' ? (
             <>
               {horarios && horarios.length > 0 && (
-                <button onClick={() => { if (confirm('¿Seguro que deseas archivar todos los horarios activos? (Fin de periodo)')) mutArchivarTodos.mutate(); }}
+                <button 
+                  onClick={() => abrirConfirmacion({ titulo: 'Archivar horarios', mensaje: '¿Seguro que deseas archivar todos los horarios activos? (Fin de periodo)', textoConfirmar: 'Sí, archivar', textoCancelar: 'Cancelar', tipo: 'peligro', onConfirmar: () => mutArchivarTodos.mutate() })}
                   disabled={mutArchivarTodos.isPending}
                   className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-yellow-700 bg-yellow-100 rounded-xl hover:bg-yellow-200">
                   {mutArchivarTodos.isPending ? 'Archivando...' : 'Archivar'}
                 </button>
               )}
               {horarioSelId && (
-                <button onClick={() => { if (confirm('Eliminar este horario?')) mutEliminar.mutate(horarioSelId); }}
+                <button 
+                  onClick={() => abrirConfirmacion({ titulo: 'Eliminar horario', mensaje: '¿Estás seguro de eliminar este horario?', textoConfirmar: 'Eliminar', textoCancelar: 'Cancelar', tipo: 'peligro', onConfirmar: () => mutEliminar.mutate(horarioSelId) })}
                   className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">
                   Eliminar
                 </button>
@@ -504,7 +527,8 @@ export default function Horarios() {
               </button>
             </>
           ) : (
-            <button onClick={() => { if (confirm('¿Seguro que deseas borrar TODO el historial definitivamente?')) mutBorrarHistorial.mutate(); }}
+            <button 
+              onClick={() => abrirConfirmacion({ titulo: 'Borrar historial', mensaje: '¿Seguro que deseas borrar TODO el historial definitivamente?', textoConfirmar: 'Sí, borrar', textoCancelar: 'Cancelar', tipo: 'peligro', onConfirmar: () => mutBorrarHistorial.mutate() })}
               disabled={mutBorrarHistorial.isPending}
               className="px-4 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-60">
               {mutBorrarHistorial.isPending ? 'Borrando...' : 'Borrar Historial'}

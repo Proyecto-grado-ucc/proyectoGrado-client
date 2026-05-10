@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi } from '../../../compartido/api';
+import { useUIStore } from '../../../compartido/storeUI';
 
 // Tipos
 interface Periodo { id: number; nombre: string; }
@@ -40,6 +42,7 @@ const nivelBadge: Record<string, string> = {
 // Tab Formularios
 function TabFormularios() {
   const qc = useQueryClient();
+  const { abrirConfirmacion } = useUIStore();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ titulo: '', periodoId: '', tipoEvaluacion: 'DESEMPENO' });
   const [err, setErr] = useState('');
@@ -101,9 +104,18 @@ function TabFormularios() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => { if (confirm('Eliminar formulario?')) mutEliminar.mutate(f.id); }}
-                      className="text-xs text-red-500 hover:underline"
+                    <button 
+                      onClick={() => {
+                        abrirConfirmacion({
+                          titulo: 'Eliminar formulario',
+                          mensaje: '¿Estás seguro de eliminar este formulario?',
+                          textoConfirmar: 'Eliminar',
+                          textoCancelar: 'Cancelar',
+                          tipo: 'peligro',
+                          onConfirmar: () => mutEliminar.mutate(f.id)
+                        });
+                      }}
+                      className="text-red-500 hover:text-red-700"
                     >
                       Eliminar
                     </button>
@@ -122,68 +134,82 @@ function TabFormularios() {
         )}
       </div>
 
-      {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center justify-between">
-              <span>Nuevo formulario</span>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Titulo</label>
-                <input
-                  value={form.titulo}
-                  onChange={e => setForm({ ...form, titulo: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ej: Evaluacion Docente 2026-1"
-                />
+      <AnimatePresence>
+        {modal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden flex flex-col border border-white/20"
+            >
+              <div className="absolute top-0 left-0 w-full h-32 bg-blue-500/20 blur-3xl opacity-50 pointer-events-none -translate-y-1/2" />
+              
+              <div className="p-8 pt-10 relative z-10 flex-1">
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-6 tracking-tight text-center">Nuevo formulario</h3>
+                
+                <div className="space-y-5">
+                  <div className="relative group">
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Titulo</label>
+                    <input
+                      value={form.titulo}
+                      onChange={e => setForm({ ...form, titulo: e.target.value })}
+                      className="w-full border-2 border-gray-200/60 bg-gray-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all shadow-inner font-medium text-gray-900"
+                      placeholder="Ej: Evaluacion Docente 2026-1"
+                    />
+                  </div>
+                  <div className="relative group">
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Periodo academico</label>
+                    <select
+                      value={form.periodoId}
+                      onChange={e => setForm({ ...form, periodoId: e.target.value })}
+                      className="w-full border-2 border-gray-200/60 bg-gray-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all shadow-inner font-medium text-gray-900"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {periodos?.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div className="relative group">
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Tipo de evaluación</label>
+                    <select
+                      value={form.tipoEvaluacion}
+                      onChange={e => setForm({ ...form, tipoEvaluacion: e.target.value })}
+                      className="w-full border-2 border-gray-200/60 bg-gray-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all shadow-inner font-medium text-gray-900"
+                    >
+                      <option value="DESEMPENO">Desempeño Docente (Predeterminada)</option>
+                      <option value="">Personalizada (Vacía)</option>
+                    </select>
+                  </div>
+                  {err && <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl mt-4 font-medium">{err}</p>}
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Periodo academico</label>
-                <select
-                  value={form.periodoId}
-                  onChange={e => setForm({ ...form, periodoId: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+              <div className="p-6 pt-2 flex gap-3 relative z-10 bg-gray-50/50">
+                <button
+                  onClick={() => { setModal(false); setErr(''); }}
+                  className="flex-1 px-5 py-3 text-sm font-bold text-gray-600 bg-gray-200/50 rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
                 >
-                  <option value="">Seleccionar...</option>
-                  {periodos?.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de evaluación</label>
-                <select
-                  value={form.tipoEvaluacion}
-                  onChange={e => setForm({ ...form, tipoEvaluacion: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (!form.titulo || !form.periodoId) { setErr('Completa todos los campos.'); return; }
+                    mutCrear.mutate();
+                  }}
+                  disabled={mutCrear.isPending}
+                  className="flex-1 px-5 py-3 text-sm font-bold text-white bg-blue-600 rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:active:scale-100 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all active:scale-95"
                 >
-                  <option value="DESEMPENO">Desempeño Docente (Predeterminada)</option>
-                  <option value="">Personalizada (Vacía)</option>
-                </select>
+                  {mutCrear.isPending ? 'Guardando...' : 'Guardar'}
+                </button>
               </div>
-              {err && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{err}</p>}
-            </div>
-            <div className="flex gap-2 mt-5">
-              <button
-                onClick={() => { setModal(false); setErr(''); }}
-                className="flex-1 text-sm py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  if (!form.titulo || !form.periodoId) { setErr('Completa todos los campos.'); return; }
-                  mutCrear.mutate();
-                }}
-                disabled={mutCrear.isPending}
-                className="flex-1 text-sm py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
-              >
-                {mutCrear.isPending ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-          </div>
+            </motion.div>
         </div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -191,6 +217,7 @@ function TabFormularios() {
 // Tab Asignaciones
 function TabAsignaciones() {
   const qc = useQueryClient();
+  const { abrirConfirmacion } = useUIStore();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ formularioId: '', docenteEvaluadoId: '' });
   const [asignarTodos, setAsignarTodos] = useState(false);
@@ -267,9 +294,18 @@ function TabAsignaciones() {
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{new Date(e.creadoEn).toLocaleDateString('es-CO')}</td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => { if (confirm('Eliminar asignacion?')) mutEliminar.mutate(e.id); }}
-                      className="text-xs text-red-500 hover:underline"
+                    <button 
+                      onClick={() => {
+                        abrirConfirmacion({
+                          titulo: 'Eliminar asignación',
+                          mensaje: '¿Estás seguro de eliminar esta asignación?',
+                          textoConfirmar: 'Eliminar',
+                          textoCancelar: 'Cancelar',
+                          tipo: 'peligro',
+                          onConfirmar: () => mutEliminar.mutate(e.id)
+                        });
+                      }}
+                      className="text-red-500 hover:text-red-700 font-medium"
                     >
                       Eliminar
                     </button>
@@ -286,67 +322,87 @@ function TabAsignaciones() {
         )}
       </div>
 
-      {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-4">Nueva asignacion de evaluacion</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Formulario</label>
-                <select
-                  value={form.formularioId}
-                  onChange={e => setForm({ ...form, formularioId: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <AnimatePresence>
+        {modal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-white/20"
+            >
+              <div className="absolute top-0 left-0 w-full h-32 bg-indigo-500/20 blur-3xl opacity-50 pointer-events-none -translate-y-1/2" />
+              
+              <div className="p-8 pt-10 relative z-10 flex-1">
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-6 tracking-tight text-center">Nueva asignación</h3>
+                
+                <div className="space-y-5">
+                  <div className="relative group">
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Formulario</label>
+                    <select
+                      value={form.formularioId}
+                      onChange={e => setForm({ ...form, formularioId: e.target.value })}
+                      className="w-full border-2 border-gray-200/60 bg-gray-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all shadow-inner font-medium text-gray-900"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {formularios?.map(f => <option key={f.id} value={f.id}>{f.titulo}</option>)}
+                    </select>
+                  </div>
+                  
+                  <div className="relative group">
+                    <label className={`block text-sm font-bold mb-1.5 ml-1 transition-colors ${asignarTodos ? 'text-gray-400' : 'text-gray-700'}`}>Docente evaluado</label>
+                    <select
+                      value={form.docenteEvaluadoId}
+                      onChange={e => setForm({ ...form, docenteEvaluadoId: e.target.value })}
+                      disabled={asignarTodos}
+                      className="w-full border-2 border-gray-200/60 bg-gray-50/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all shadow-inner font-medium text-gray-900 disabled:bg-gray-100/50 disabled:text-gray-400 disabled:border-gray-100"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {docentes?.map(d => <option key={d.id} value={d.id}>{d.usuarioNombre}</option>)}
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mt-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors cursor-pointer" onClick={() => setAsignarTodos(!asignarTodos)}>
+                    <input
+                      type="checkbox"
+                      id="asignarTodos"
+                      checked={asignarTodos}
+                      readOnly
+                      className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer pointer-events-none"
+                    />
+                    <label htmlFor="asignarTodos" className="text-sm text-indigo-900 font-bold cursor-pointer select-none">Asignar a todos los docentes</label>
+                  </div>
+                  
+                  {err && <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl mt-4 font-medium">{err}</p>}
+                </div>
+              </div>
+
+              <div className="p-6 pt-2 flex gap-3 relative z-10 bg-gray-50/50">
+                <button
+                  onClick={() => { setModal(false); setErr(''); setAsignarTodos(false); }}
+                  className="flex-1 px-5 py-3 text-sm font-bold text-gray-600 bg-gray-200/50 rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
                 >
-                  <option value="">Seleccionar...</option>
-                  {formularios?.map(f => <option key={f.id} value={f.id}>{f.titulo}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Docente evaluado</label>
-                <select
-                  value={form.docenteEvaluadoId}
-                  onChange={e => setForm({ ...form, docenteEvaluadoId: e.target.value })}
-                  disabled={asignarTodos}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (!form.formularioId || (!asignarTodos && !form.docenteEvaluadoId)) { setErr('Completa todos los campos necesarios.'); return; }
+                    mutCrear.mutate();
+                  }}
+                  disabled={mutCrear.isPending}
+                  className="flex-1 px-5 py-3 text-sm font-bold text-white bg-indigo-600 rounded-2xl hover:bg-indigo-700 disabled:opacity-50 disabled:active:scale-100 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all active:scale-95"
                 >
-                  <option value="">Seleccionar...</option>
-                  {docentes?.map(d => <option key={d.id} value={d.id}>{d.usuarioNombre}</option>)}
-                </select>
+                  {mutCrear.isPending ? 'Guardando...' : 'Asignar'}
+                </button>
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="checkbox"
-                  id="asignarTodos"
-                  checked={asignarTodos}
-                  onChange={(e) => setAsignarTodos(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="asignarTodos" className="text-sm text-gray-700 font-medium">Asignar a todos los docentes</label>
-              </div>
-              {err && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{err}</p>}
-            </div>
-            <div className="flex gap-3 mt-5 justify-end">
-              <button
-                onClick={() => { setModal(false); setErr(''); setAsignarTodos(false); }}
-                className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  if (!form.formularioId || (!asignarTodos && !form.docenteEvaluadoId)) { setErr('Completa todos los campos necesarios.'); return; }
-                  mutCrear.mutate();
-                }}
-                disabled={mutCrear.isPending}
-                className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
-              >
-                {mutCrear.isPending ? 'Guardando...' : 'Asignar'}
-              </button>
-            </div>
-          </div>
+            </motion.div>
         </div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -473,6 +529,7 @@ function TabKdd() {
 // Tab Alertas
 function TabAlertas({ onConteo }: { onConteo: (n: number) => void }) {
   const qc = useQueryClient();
+  const { abrirConfirmacion } = useUIStore();
 
   const { data: alertas, isLoading } = useQuery({
     queryKey: ['alertas'],
@@ -527,11 +584,20 @@ function TabAlertas({ onConteo }: { onConteo: (n: number) => void }) {
                   Marcar leida
                 </button>
               )}
-              <button
-                onClick={() => { if (confirm('Eliminar alerta?')) mutEliminar.mutate(a.id); }}
-                className="text-xs text-red-500 hover:underline"
+              <button 
+                onClick={() => {
+                  abrirConfirmacion({
+                    titulo: 'Eliminar alerta',
+                    mensaje: '¿Estás seguro de eliminar esta alerta?',
+                    textoConfirmar: 'Eliminar',
+                    textoCancelar: 'Cancelar',
+                    tipo: 'peligro',
+                    onConfirmar: () => mutEliminar.mutate(a.id)
+                  });
+                }}
+                className="text-red-500 text-xs px-2 py-1 hover:bg-red-50 rounded"
               >
-                Eliminar
+                Descartar
               </button>
             </div>
           </div>

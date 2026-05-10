@@ -21,6 +21,8 @@ import LayoutEstudiante from './modulos/estudiante/layout/LayoutEstudiante';
 import DashboardEstudiante from './modulos/estudiante/paginas/DashboardEstudiante';
 import HorarioEstudiante from './modulos/estudiante/paginas/HorarioEstudiante';
 import FormulariosEstudiante from './modulos/estudiante/paginas/FormulariosEstudiante';
+import { Toaster } from 'react-hot-toast';
+import ConfirmModal from './compartido/ConfirmModal';
 
 function RutaProtegida({ children }: { children: React.ReactNode }) {
   const estaAutenticado = useAuthStore((s) => s.estaAutenticado);
@@ -71,6 +73,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <RutasAnimadas />
+      <Toaster position="top-right" toastOptions={{ duration: 4000, style: { background: '#333', color: '#fff' } }} />
+      <ConfirmModal />
     </BrowserRouter>
   );
 }

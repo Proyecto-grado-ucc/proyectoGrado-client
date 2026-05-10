@@ -1,5 +1,6 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi } from '../../../compartido/api';
 
 interface AuditLog {
@@ -120,46 +121,58 @@ export default function Auditoria() {
         )}
       </div>
 
-      {detalle && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-gray-900">Detalle del cambio</h2>
-              <button onClick={() => setDetalle(null)} className="text-gray-400 hover:text-gray-600 text-lg">x</button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Entidad</p>
-                <p className="text-sm text-gray-800">{detalle.entidad} #{detalle.entidadId}</p>
+      <AnimatePresence>
+        {detalle && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setDetalle(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Detalle del cambio</h2>
+                <button onClick={() => setDetalle(null)} className="text-gray-400 hover:text-gray-600 transition-colors">✕</button>
               </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Fecha</p>
-                <p className="text-sm text-gray-800">{new Date(detalle.timestamp).toLocaleString('es-CO')}</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Entidad</p>
+                  <p className="text-base text-gray-800 font-semibold">{detalle.entidad} <span className="text-gray-400 font-normal">#{detalle.entidadId}</span></p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Fecha</p>
+                  <p className="text-base text-gray-800">{new Date(detalle.timestamp).toLocaleString('es-CO')}</p>
+                </div>
+                {detalle.datosPrevios && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2">Datos anteriores</p>
+                    <pre className="bg-red-50 text-red-800 text-sm p-4 rounded-xl overflow-auto max-h-48 border border-red-100">
+                      {JSON.stringify(detalle.datosPrevios, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                {detalle.datosNuevos && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2">Datos nuevos</p>
+                    <pre className="bg-green-50 text-green-800 text-sm p-4 rounded-xl overflow-auto max-h-48 border border-green-100">
+                      {JSON.stringify(detalle.datosNuevos, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
-              {detalle.datosPrevios && (
-                <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Datos anteriores</p>
-                  <pre className="bg-red-50 text-red-800 text-xs p-3 rounded-lg overflow-auto max-h-32">
-                    {JSON.stringify(detalle.datosPrevios, null, 2)}
-                  </pre>
-                </div>
-              )}
-              {detalle.datosNuevos && (
-                <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Datos nuevos</p>
-                  <pre className="bg-green-50 text-green-800 text-xs p-3 rounded-lg overflow-auto max-h-32">
-                    {JSON.stringify(detalle.datosNuevos, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-            <div className="mt-5 flex justify-end">
-              <button onClick={() => setDetalle(null)}
-                className="text-sm px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">Cerrar</button>
-            </div>
+              <div className="mt-8 flex justify-end">
+                <button onClick={() => setDetalle(null)}
+                  className="text-sm px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors">
+                  Cerrar
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

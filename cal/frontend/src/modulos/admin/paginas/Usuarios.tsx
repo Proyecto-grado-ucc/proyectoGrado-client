@@ -1,6 +1,8 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi } from '../../../compartido/api';
+import { useUIStore } from '../../../compartido/storeUI';
 
 interface Usuario {
   id: number;
@@ -49,6 +51,7 @@ const ROLES = ['Admin', 'Docente', 'Estudiante'];
 
 export default function Usuarios() {
   const qc = useQueryClient();
+  const { abrirConfirmacion } = useUIStore();
   const [page, setPage] = useState(1);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editando, setEditando] = useState<Usuario | null>(null);
@@ -164,7 +167,21 @@ export default function Usuarios() {
                   </td>
                   <td className="px-5 py-3 flex gap-2">
                     <button onClick={() => abrirEditar(u)} className="text-xs text-blue-600 hover:underline">Editar</button>
-                    <button onClick={() => { if (confirm('Eliminar usuario?')) mutEliminar.mutate(u.id); }} className="text-xs text-red-500 hover:underline">Eliminar</button>
+                    <button 
+                      onClick={() => {
+                        abrirConfirmacion({
+                          titulo: 'Eliminar usuario',
+                          mensaje: `¿Estás seguro de que deseas eliminar a ${u.nombre}? Esta acción no se puede deshacer.`,
+                          textoConfirmar: 'Sí, eliminar',
+                          textoCancelar: 'Cancelar',
+                          tipo: 'peligro',
+                          onConfirmar: () => mutEliminar.mutate(u.id)
+                        });
+                      }} 
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Eliminar
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -184,50 +201,64 @@ export default function Usuarios() {
         )}
       </div>
 
-      {modalAbierto && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">{editando ? 'Editar usuario' : 'Nuevo usuario'}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Nombre completo</label>
-                <input value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Correo electronico</label>
-                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">{editando ? 'Nueva contrasena (dejar vacio para no cambiar)' : 'Contrasena'}</label>
-                <input type="password" value={form.contrasena} onChange={e => setForm({...form, contrasena: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Rol</label>
-                <select value={form.rol} onChange={e => setForm({...form, rol: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              {editando && (
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="activo" checked={form.activo} onChange={e => setForm({...form, activo: e.target.checked})} />
-                  <label htmlFor="activo" className="text-sm text-gray-700">Usuario activo</label>
+      <AnimatePresence>
+        {modalAbierto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={cerrarModal}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            >
+              <h2 className="text-xl font-bold text-gray-900 mb-6">{editando ? 'Editar usuario' : 'Nuevo usuario'}</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                  <input value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-gray-50 transition-colors" />
                 </div>
-              )}
-              {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-            </div>
-            <div className="flex gap-3 mt-6 justify-end">
-              <button onClick={cerrarModal} className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-              <button onClick={guardar} className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                {editando ? 'Guardar cambios' : 'Crear usuario'}
-              </button>
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                  <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-gray-50 transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{editando ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña'}</label>
+                  <input type="password" value={form.contrasena} onChange={e => setForm({...form, contrasena: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-gray-50 transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+                  <select value={form.rol} onChange={e => setForm({...form, rol: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                {editando && (
+                  <div className="flex items-center gap-2 pt-2">
+                    <input type="checkbox" id="activo" checked={form.activo} onChange={e => setForm({...form, activo: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
+                    <label htmlFor="activo" className="text-sm font-medium text-gray-700">Usuario activo</label>
+                  </div>
+                )}
+                {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl">{error}</p>}
+              </div>
+              <div className="flex gap-3 mt-8 justify-end">
+                <button onClick={cerrarModal} className="text-sm px-5 py-2.5 font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancelar</button>
+                <button onClick={guardar} className="text-sm px-5 py-2.5 font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm shadow-blue-200 transition-colors">
+                  {editando ? 'Guardar cambios' : 'Crear usuario'}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

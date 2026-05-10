@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi } from '../../../compartido/api';
 import { useAuthStore } from '../../../seguridad/store';
 
@@ -83,36 +84,70 @@ export default function HorarioEstudiante() {
   }
 
   const ModalBaja = () => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
-        <h3 className="text-lg font-bold text-gray-900 mb-2">¿Seguro que deseas darte de baja?</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Perderás acceso a tu grupo actual y a tus evaluaciones docentes. Deberás volver a ingresar un código de acceso para reingresar.
-        </p>
-        <p className="text-xs text-gray-600 font-semibold mb-2">
-          Escribe "<span className="text-red-600 select-all">Confirmo darme de baja</span>" para continuar:
-        </p>
-        <input
-          type="text"
-          value={confirmacionBaja}
-          onChange={e => setConfirmacionBaja(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 text-center mb-4"
-          placeholder="Confirmo darme de baja"
-        />
-        <div className="flex gap-2 justify-center">
-          <button onClick={() => { setMostrarModalBaja(false); setConfirmacionBaja(''); }} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
-            Cancelar
-          </button>
-          <button
-            onClick={() => mutDesmatricular.mutate()}
-            disabled={confirmacionBaja.trim().toLowerCase() !== 'confirmo darme de baja' || mutDesmatricular.isPending}
-            className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+    <AnimatePresence>
+      {mostrarModalBaja && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-md"
+            onClick={() => { setMostrarModalBaja(false); setConfirmacionBaja(''); }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-white/20"
           >
-            {mutDesmatricular.isPending ? 'Procesando...' : 'Darme de baja'}
-          </button>
+            <div className="absolute top-0 left-0 w-full h-32 bg-red-500/20 blur-3xl opacity-50 pointer-events-none -translate-y-1/2" />
+            
+            <div className="p-8 pt-10 text-center relative z-10 flex-1">
+              <motion.div 
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1, type: "spring", stiffness: 200, damping: 15 }}
+                className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6 shadow-sm border border-white/50 bg-red-100 text-red-600"
+              >
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </motion.div>
+              
+              <h3 className="text-2xl font-extrabold text-gray-900 mb-3 tracking-tight">¿Seguro que deseas darte de baja?</h3>
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed font-medium">
+                Perderás acceso a tu grupo actual y a tus evaluaciones docentes. Deberás volver a ingresar un código de acceso para reingresar.
+              </p>
+
+              <div className="bg-red-50/80 rounded-2xl p-5 mb-2 border border-red-100/50 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <p className="text-sm text-red-800 font-medium mb-3 relative z-10">
+                  Escribe <span className="font-bold select-all bg-white/80 px-2 py-1 rounded-md shadow-sm border border-red-200/50">Confirmo darme de baja</span> para continuar:
+                </p>
+                <input
+                  type="text"
+                  value={confirmacionBaja}
+                  onChange={e => setConfirmacionBaja(e.target.value)}
+                  className="w-full border-2 border-red-200/60 bg-white/90 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-red-500/20 focus:border-red-400 text-center transition-all shadow-inner relative z-10 font-bold text-red-900 placeholder-red-300"
+                  placeholder="Confirmo darme de baja"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 pt-2 flex gap-3 relative z-10">
+              <button onClick={() => { setMostrarModalBaja(false); setConfirmacionBaja(''); }} className="flex-1 px-5 py-3 text-sm font-bold text-gray-600 bg-gray-100/80 rounded-2xl hover:bg-gray-200 transition-all active:scale-95">
+                Cancelar
+              </button>
+              <button
+                onClick={() => mutDesmatricular.mutate()}
+                disabled={confirmacionBaja.trim().toLowerCase() !== 'confirmo darme de baja' || mutDesmatricular.isPending}
+                className="flex-1 px-5 py-3 text-sm font-bold bg-red-600 text-white rounded-2xl hover:bg-red-700 disabled:opacity-50 disabled:active:scale-100 shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all active:scale-95"
+              >
+                {mutDesmatricular.isPending ? 'Procesando...' : 'Darme de baja'}
+              </button>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 
   if (!miGrupoId) {
@@ -164,7 +199,7 @@ export default function HorarioEstudiante() {
         <button onClick={() => setMostrarModalBaja(true)} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 text-sm rounded-xl font-medium transition-colors border border-red-100">
           Darme de baja del grupo actual
         </button>
-        {mostrarModalBaja && <ModalBaja />}
+        <ModalBaja />
       </div>
     );
   }
@@ -181,7 +216,7 @@ export default function HorarioEstudiante() {
         <button onClick={() => setMostrarModalBaja(true)} className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 text-sm rounded-xl font-medium transition-colors border border-red-100">
           Darme de baja del grupo actual
         </button>
-        {mostrarModalBaja && <ModalBaja />}
+        <ModalBaja />
       </div>
     );
   }
@@ -234,7 +269,7 @@ export default function HorarioEstudiante() {
         </div>
       </div>
 
-      {mostrarModalBaja && <ModalBaja />}
+      <ModalBaja />
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         <table className="w-full text-xs border-collapse">
