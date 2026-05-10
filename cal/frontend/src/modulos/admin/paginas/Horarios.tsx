@@ -177,8 +177,8 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
   });
 
   const getFranjaId = (dia: string, bloque: number) => franjas.find(f => f.diaSemana === dia && f.bloqueIdx === bloque)?.id ?? null;
-  const getAsig = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return null; return asigFiltradas.find(a => a.franjaId === fId) ?? null; };
-  const getAsigGlobal = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return null; return asignaciones.find(a => a.franjaId === fId) ?? null; };
+  const getAsigs = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return []; return asigFiltradas.filter(a => a.franjaId === fId); };
+  const getAsigsGlobal = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return []; return asignaciones.filter(a => a.franjaId === fId); };
   const getColor = (asig: Asignacion) => { const g = grupos.find(x => x.id === asig.grupoId); const c = cursos.find(x => x.id === g?.cursoId); const n = niveles.find(x => x.id === c?.nivelId); return NIVEL_COLOR[n?.codigo ?? ''] ?? '#6b7280'; };
   const getHora = (bloque: number) => { const f = franjas.find(x => x.bloqueIdx === bloque); return f ? `${f.horaInicio.substring(0, 5)}-${f.horaFin.substring(0, 5)}` : `Bloque ${bloque}`; };
 
@@ -187,9 +187,24 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
     if (idx === null) return;
     const fIdDest = getFranjaId(dia, bloque);
     if (!fIdDest) return;
-    // Check if destination is occupied (globally, not just filtered)
-    const ocupado = getAsigGlobal(dia, bloque);
-    if (ocupado) { setDropError('Esa celda ya está ocupada.'); setTimeout(() => setDropError(''), 3000); setDragIdx(null); dragIdxRef.current = null; return; }
+    
+    const asigMovida = asignaciones[idx];
+    if (!asigMovida) return;
+
+    // Verificar cruces (mismo docente, aula o grupo en la misma franja)
+    const asigsEnDestino = getAsigsGlobal(dia, bloque);
+    const cruceDocente = asigsEnDestino.some(a => a.docenteId === asigMovida.docenteId);
+    const cruceAula = asigsEnDestino.some(a => a.aulaId === asigMovida.aulaId);
+    const cruceGrupo = asigsEnDestino.some(a => a.grupoId === asigMovida.grupoId);
+
+    if (cruceDocente || cruceAula || cruceGrupo) {
+      const motivo = cruceDocente ? 'El docente' : cruceAula ? 'El aula' : 'El grupo';
+      setDropError(`Cruce detectado: ${motivo} ya tiene clase en este horario.`);
+      setTimeout(() => setDropError(''), 4000);
+      setDragIdx(null); dragIdxRef.current = null;
+      return;
+    }
+
     const nuevas = asignaciones.map((a, i) => i === idx ? { ...a, franjaId: fIdDest } : a);
     setAsignaciones(nuevas);
     setDragIdx(null);
@@ -222,31 +237,39 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
               <tr key={bloque}>
                 <td className="bg-gray-50 px-3 py-2 text-gray-500 border border-gray-100 whitespace-nowrap font-medium text-xs">{getHora(bloque)}</td>
                 {diasPresentes.map(dia => {
-                  const asig = getAsig(dia, bloque);
-                  const asigIdx = asig ? asignaciones.findIndex(a => a.franjaId === asig.franjaId) : -1;
-                  const grupo = asig ? grupos.find(g => g.id === asig.grupoId) : null;
-                  const docente = asig ? docentes.find(d => d.id === asig.docenteId) : null;
-                  const aula = asig ? aulas.find(a => a.id === asig.aulaId) : null;
-                  const color = asig ? getColor(asig) : '';
-                  const isDragging = dragIdx === asigIdx && asigIdx !== -1;
+                  const asigs = getAsigs(dia, bloque);
                   return (
-                    <td key={dia} className="border border-gray-100 p-1 align-top h-20 w-36"
+                    <td key={dia} className="border border-gray-100 p-1 align-top min-h-[5rem] w-36"
                       onDragOver={e => { e.preventDefault(); }}
                       onDrop={() => handleDrop(dia, bloque)}>
-                      {asig ? (
-                        <div
-                          draggable
-                          onDragStart={() => { setDragIdx(asigIdx); dragIdxRef.current = asigIdx; }}
-                          onDragEnd={() => { setDragIdx(null); dragIdxRef.current = null; }}
-                          onClick={() => setDetalle(asig)}
-                          className={`w-full h-full rounded-lg p-1.5 text-left cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-40 scale-95' : 'hover:opacity-80'}`}
-                          style={{ backgroundColor: `${color}20`, borderLeft: `3px solid ${color}` }}>
-                          <p className="font-semibold text-gray-800 truncate text-xs">{grupo?.cursoNombre ?? `Grupo ${asig.grupoId}`}</p>
-                          <p className="text-gray-500 truncate text-xs">{grupo?.codigo ?? ''}</p>
-                          <p className="text-gray-400 truncate text-xs">{(docente?.usuarioNombre ?? '').split(' ')[0]} - {aula?.codigo ?? ''}</p>
+                      {asigs.length > 0 ? (
+                        <div className="flex flex-col gap-1 w-full h-full">
+                          {asigs.map((asig, i) => {
+                            const asigIdx = asignaciones.findIndex(a => a.grupoId === asig.grupoId && a.docenteId === asig.docenteId && a.aulaId === asig.aulaId && a.franjaId === asig.franjaId);
+                            const grupo = grupos.find(g => g.id === asig.grupoId);
+                            const docente = docentes.find(d => d.id === asig.docenteId);
+                            const aula = aulas.find(a => a.id === asig.aulaId);
+                            const color = getColor(asig);
+                            const isDragging = dragIdx === asigIdx && asigIdx !== -1;
+                            
+                            return (
+                              <div
+                                key={`${asig.grupoId}-${asig.docenteId}-${asig.franjaId}-${i}`}
+                                draggable
+                                onDragStart={() => { setDragIdx(asigIdx); dragIdxRef.current = asigIdx; }}
+                                onDragEnd={() => { setDragIdx(null); dragIdxRef.current = null; }}
+                                onClick={() => setDetalle(asig)}
+                                className={`w-full rounded-lg p-1.5 text-left cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-40 scale-95' : 'hover:opacity-80'}`}
+                                style={{ backgroundColor: `${color}20`, borderLeft: `3px solid ${color}` }}>
+                                <p className="font-semibold text-gray-800 truncate text-[11px] leading-tight mb-0.5">{grupo?.cursoNombre ?? `Grupo ${asig.grupoId}`}</p>
+                                <p className="text-gray-500 truncate text-[10px] leading-tight">{grupo?.codigo ?? ''}</p>
+                                <p className="text-gray-400 truncate text-[10px] leading-tight">{(docente?.usuarioNombre ?? '').split(' ')[0]} - {aula?.codigo ?? ''}</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
-                        <div className="w-full h-full rounded-lg border border-dashed border-gray-200 transition-colors" />
+                        <div className="w-full h-full min-h-[4rem] rounded-lg border border-dashed border-gray-200 transition-colors" />
                       )}
                     </td>
                   );
