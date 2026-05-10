@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
 import ExcelJS from 'exceljs';
@@ -126,30 +126,97 @@ function ModalGenerar({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   );
 }
 
-// ── Popup de detalle de celda ─────────────────────────────────────────────────
-function DetalleAsignacion({ asig, grupos, docentes, aulas, onClose }: {
-  asig: Asignacion; grupos: Grupo[]; docentes: Docente[]; aulas: Aula[]; onClose: () => void;
+// ── Popup de detalle de celda y mover manualmente ─────────────────────────────
+function DetalleAsignacion({ asig, grupos, docentes, aulas, franjas, asignaciones, onMover, onClose }: {
+  asig: Asignacion; grupos: Grupo[]; docentes: Docente[]; aulas: Aula[];
+  franjas: Franja[]; asignaciones: Asignacion[];
+  onMover: (asigOrig: Asignacion, fIdDest: number) => void;
+  onClose: () => void;
 }) {
+  const [nuevoDia, setNuevoDia] = useState('');
+  const [nuevoBloque, setNuevoBloque] = useState<number | ''>('');
+  const [error, setError] = useState('');
+
   const grupo = grupos.find(g => g.id === asig.grupoId);
   const docente = docentes.find(d => d.id === asig.docenteId);
   const aula = aulas.find(a => a.id === asig.aulaId);
+  const franjaActual = franjas.find(f => f.id === asig.franjaId);
+
+  const diasUnicos = [...new Set(franjas.map(f => f.diaSemana))].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
+  const getHoraParaSort = (bloque: number) => { const f = franjas.find(x => x.bloqueIdx === bloque); return f ? f.horaInicio : '23:59:59'; };
+  const bloquesUnicos = [...new Set(franjas.map(f => f.bloqueIdx))].sort((a, b) => getHoraParaSort(a).localeCompare(getHoraParaSort(b)));
+  const getHora = (bloque: number) => { const f = franjas.find(x => x.bloqueIdx === bloque); return f ? `${f.horaInicio.substring(0, 5)}-${f.horaFin.substring(0, 5)}` : `Bloque ${bloque}`; };
+
+  const handleGuardar = () => {
+    if (!nuevoDia || nuevoBloque === '') { setError('Selecciona el nuevo día y horario.'); return; }
+    const fIdDest = franjas.find(f => f.diaSemana === nuevoDia && f.bloqueIdx === nuevoBloque)?.id;
+    if (!fIdDest) { setError('Franja horaria no encontrada.'); return; }
+    if (fIdDest === asig.franjaId) { onClose(); return; } // No hubo cambios
+
+    // Validar cruces
+    const asigsEnDestino = asignaciones.filter(a => a.franjaId === fIdDest);
+    const cruceDocente = asigsEnDestino.some(a => a.docenteId === asig.docenteId);
+    const cruceAula = asigsEnDestino.some(a => a.aulaId === asig.aulaId);
+    const cruceGrupo = asigsEnDestino.some(a => a.grupoId === asig.grupoId);
+
+    if (cruceDocente || cruceAula || cruceGrupo) {
+      const motivo = cruceDocente ? 'El docente' : cruceAula ? 'El aula' : 'El grupo';
+      setError(`Cruce detectado: ${motivo} ya tiene clase asignada en este horario.`);
+      return;
+    }
+
+    onMover(asig, fIdDest);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-72">
-        <h3 className="font-bold text-gray-900 mb-4">Detalle de asignacion</h3>
-        <div className="space-y-3 text-sm">
-          <div><p className="text-xs text-gray-400">Grupo</p><p className="font-medium">{grupo?.codigo ?? `ID ${asig.grupoId}`}</p></div>
-          <div><p className="text-xs text-gray-400">Curso</p><p className="font-medium">{grupo?.cursoNombre ?? '-'}</p></div>
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-80">
+        <h3 className="font-bold text-gray-900 mb-4 flex items-center justify-between">
+          <span>Detalle y Edición</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+        </h3>
+        
+        <div className="space-y-3 text-sm mb-6 bg-gray-50 p-3 rounded-xl border border-gray-100">
+          <div><p className="text-xs text-gray-400">Día y Hora Actual</p><p className="font-medium text-blue-700">{DIAS[franjaActual?.diaSemana ?? ''] ?? ''} - {franjaActual ? `${franjaActual.horaInicio.substring(0,5)} a ${franjaActual.horaFin.substring(0,5)}` : ''}</p></div>
+          <div><p className="text-xs text-gray-400">Grupo / Curso</p><p className="font-medium">{grupo?.codigo ?? ''} - {grupo?.cursoNombre ?? '-'}</p></div>
           <div><p className="text-xs text-gray-400">Docente</p><p className="font-medium">{docente?.usuarioNombre ?? `ID ${asig.docenteId}`}</p></div>
           <div><p className="text-xs text-gray-400">Aula</p><p className="font-medium">{aula?.codigo ?? `ID ${asig.aulaId}`} ({aula?.tipo ?? ''})</p></div>
         </div>
-        <button onClick={onClose} className="mt-5 w-full py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl">Cerrar</button>
+
+        <div className="border-t border-gray-100 pt-4">
+          <h4 className="font-medium text-sm text-gray-800 mb-3">Mover manualmente a:</h4>
+          
+          <div className="space-y-3 mb-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Día</label>
+              <select value={nuevoDia} onChange={e => setNuevoDia(e.target.value)} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Seleccionar día...</option>
+                {diasUnicos.map(d => <option key={d} value={d}>{DIAS[d] ?? d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Horario (Bloque)</label>
+              <select value={nuevoBloque} onChange={e => setNuevoBloque(Number(e.target.value))} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Seleccionar hora...</option>
+                {bloquesUnicos.map(b => <option key={b} value={b}>{getHora(b)}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-red-600 bg-red-50 p-2 rounded-lg mb-3">{error}</p>}
+
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
+            <button onClick={handleGuardar} className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700">Mover Clase</button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Grilla semanal con Drag & Drop ────────────────────────────────────────────
+// ── Grilla semanal ────────────────────────────────────────────
 function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, niveles, filtroDocente, filtroAula, onAsignacionesChange, guardando }: {
   horario: Horario; franjas: Franja[]; grupos: Grupo[]; docentes: Docente[]; aulas: Aula[];
   cursos: Curso[]; niveles: Nivel[];
@@ -159,11 +226,9 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
 }) {
   const [detalle, setDetalle] = useState<Asignacion | null>(null);
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>(horario.asignaciones);
-  const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const [dropError, setDropError] = useState('');
-  const dragIdxRef = useRef<number | null>(null);
+  const [statusMsg, setStatusMsg] = useState('');
 
-  // Solo reiniciar asignaciones cuando cambia el ID del horario (no en cada re-render)
+  // Solo reiniciar asignaciones cuando cambia el ID del horario
   useEffect(() => { setAsignaciones(horario.asignaciones); }, [horario.id]);
 
   const diasPresentes = [...new Set(franjas.map(f => f.diaSemana))].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
@@ -178,38 +243,17 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
 
   const getFranjaId = (dia: string, bloque: number) => franjas.find(f => f.diaSemana === dia && f.bloqueIdx === bloque)?.id ?? null;
   const getAsigs = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return []; return asigFiltradas.filter(a => a.franjaId === fId); };
-  const getAsigsGlobal = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return []; return asignaciones.filter(a => a.franjaId === fId); };
   const getColor = (asig: Asignacion) => { const g = grupos.find(x => x.id === asig.grupoId); const c = cursos.find(x => x.id === g?.cursoId); const n = niveles.find(x => x.id === c?.nivelId); return NIVEL_COLOR[n?.codigo ?? ''] ?? '#6b7280'; };
   const getHora = (bloque: number) => { const f = franjas.find(x => x.bloqueIdx === bloque); return f ? `${f.horaInicio.substring(0, 5)}-${f.horaFin.substring(0, 5)}` : `Bloque ${bloque}`; };
 
-  const handleDrop = (dia: string, bloque: number) => {
-    const idx = dragIdxRef.current;
-    if (idx === null) return;
-    const fIdDest = getFranjaId(dia, bloque);
-    if (!fIdDest) return;
-    
-    const asigMovida = asignaciones[idx];
-    if (!asigMovida) return;
-
-    // Verificar cruces (mismo docente, aula o grupo en la misma franja)
-    const asigsEnDestino = getAsigsGlobal(dia, bloque);
-    const cruceDocente = asigsEnDestino.some(a => a.docenteId === asigMovida.docenteId);
-    const cruceAula = asigsEnDestino.some(a => a.aulaId === asigMovida.aulaId);
-    const cruceGrupo = asigsEnDestino.some(a => a.grupoId === asigMovida.grupoId);
-
-    if (cruceDocente || cruceAula || cruceGrupo) {
-      const motivo = cruceDocente ? 'El docente' : cruceAula ? 'El aula' : 'El grupo';
-      setDropError(`Cruce detectado: ${motivo} ya tiene clase en este horario.`);
-      setTimeout(() => setDropError(''), 4000);
-      setDragIdx(null); dragIdxRef.current = null;
-      return;
-    }
-
-    const nuevas = asignaciones.map((a, i) => i === idx ? { ...a, franjaId: fIdDest } : a);
+  const handleMoverManual = (asigOriginal: Asignacion, fIdDest: number) => {
+    const asigIdx = asignaciones.findIndex(a => a.grupoId === asigOriginal.grupoId && a.docenteId === asigOriginal.docenteId && a.aulaId === asigOriginal.aulaId && a.franjaId === asigOriginal.franjaId);
+    if (asigIdx === -1) return;
+    const nuevas = asignaciones.map((a, i) => i === asigIdx ? { ...a, franjaId: fIdDest } : a);
     setAsignaciones(nuevas);
-    setDragIdx(null);
-    dragIdxRef.current = null;
     onAsignacionesChange(nuevas);
+    setStatusMsg('Clase movida exitosamente.');
+    setTimeout(() => setStatusMsg(''), 3000);
   };
 
   if (!asigFiltradas.length) return (
@@ -221,8 +265,13 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
 
   return (
     <>
-      {detalle && <DetalleAsignacion asig={detalle} grupos={grupos} docentes={docentes} aulas={aulas} onClose={() => setDetalle(null)} />}
-      {dropError && <div className="mx-4 mt-2 mb-0 px-3 py-2 bg-red-50 text-red-600 text-xs rounded-lg">{dropError}</div>}
+      {detalle && (
+        <DetalleAsignacion 
+          asig={detalle} grupos={grupos} docentes={docentes} aulas={aulas} franjas={franjas} asignaciones={asignaciones}
+          onMover={handleMoverManual} onClose={() => setDetalle(null)} 
+        />
+      )}
+      {statusMsg && <div className="mx-4 mt-2 mb-0 px-3 py-2 bg-green-50 text-green-700 text-xs rounded-lg">{statusMsg}</div>}
       {guardando && <div className="mx-4 mt-2 mb-0 px-3 py-2 bg-blue-50 text-blue-600 text-xs rounded-lg flex items-center gap-2"><span className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />Guardando cambios...</div>}
       <div className="overflow-x-auto p-4" id="horario-grilla-print">
         <table className="w-full text-xs border-collapse">
@@ -239,27 +288,20 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
                 {diasPresentes.map(dia => {
                   const asigs = getAsigs(dia, bloque);
                   return (
-                    <td key={dia} className="border border-gray-100 p-1 align-top min-h-[5rem] w-36"
-                      onDragOver={e => { e.preventDefault(); }}
-                      onDrop={() => handleDrop(dia, bloque)}>
+                    <td key={dia} className="border border-gray-100 p-1 align-top min-h-[5rem] w-36">
                       {asigs.length > 0 ? (
                         <div className="flex flex-col gap-1 w-full h-full">
                           {asigs.map((asig, i) => {
-                            const asigIdx = asignaciones.findIndex(a => a.grupoId === asig.grupoId && a.docenteId === asig.docenteId && a.aulaId === asig.aulaId && a.franjaId === asig.franjaId);
                             const grupo = grupos.find(g => g.id === asig.grupoId);
                             const docente = docentes.find(d => d.id === asig.docenteId);
                             const aula = aulas.find(a => a.id === asig.aulaId);
                             const color = getColor(asig);
-                            const isDragging = dragIdx === asigIdx && asigIdx !== -1;
                             
                             return (
                               <div
                                 key={`${asig.grupoId}-${asig.docenteId}-${asig.franjaId}-${i}`}
-                                draggable
-                                onDragStart={() => { setDragIdx(asigIdx); dragIdxRef.current = asigIdx; }}
-                                onDragEnd={() => { setDragIdx(null); dragIdxRef.current = null; }}
                                 onClick={() => setDetalle(asig)}
-                                className={`w-full rounded-lg p-1.5 text-left cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-40 scale-95' : 'hover:opacity-80'}`}
+                                className="w-full rounded-lg p-1.5 text-left cursor-pointer transition-all hover:opacity-80 shadow-sm"
                                 style={{ backgroundColor: `${color}20`, borderLeft: `3px solid ${color}` }}>
                                 <p className="font-semibold text-gray-800 truncate text-[11px] leading-tight mb-0.5">{grupo?.cursoNombre ?? `Grupo ${asig.grupoId}`}</p>
                                 <p className="text-gray-500 truncate text-[10px] leading-tight">{grupo?.codigo ?? ''}</p>
@@ -269,7 +311,7 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
                           })}
                         </div>
                       ) : (
-                        <div className="w-full h-full min-h-[4rem] rounded-lg border border-dashed border-gray-200 transition-colors" />
+                        <div className="w-full h-full min-h-[4rem] rounded-lg border border-dashed border-gray-100 transition-colors bg-gray-50/50" />
                       )}
                     </td>
                   );
