@@ -124,8 +124,11 @@ function TabFormularios() {
 
       {modal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-4">Nuevo formulario de evaluacion</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center justify-between">
+              <span>Nuevo formulario</span>
+              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </h3>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Titulo</label>
@@ -160,10 +163,10 @@ function TabFormularios() {
               </div>
               {err && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{err}</p>}
             </div>
-            <div className="flex gap-3 mt-5 justify-end">
+            <div className="flex gap-2 mt-5">
               <button
                 onClick={() => { setModal(false); setErr(''); }}
-                className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="flex-1 text-sm py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancelar
               </button>
@@ -173,7 +176,7 @@ function TabFormularios() {
                   mutCrear.mutate();
                 }}
                 disabled={mutCrear.isPending}
-                className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
+                className="flex-1 text-sm py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
               >
                 {mutCrear.isPending ? 'Guardando...' : 'Guardar'}
               </button>
@@ -549,13 +552,13 @@ export default function Evaluacion() {
   const [alertasNoLeidas, setAlertasNoLeidas] = useState(0);
 
   return (
-    <div className="p-8 min-h-full bg-gray-50">
+    <div className="p-4 md:p-8 min-h-full bg-gray-50">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Evaluacion docente</h1>
         <p className="text-gray-500 text-sm mt-0.5">Gestion del ciclo completo de evaluacion con analisis KDD</p>
       </div>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+      <div className="flex flex-wrap gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
         {TABS.map((t, i) => (
           <button
             key={t}

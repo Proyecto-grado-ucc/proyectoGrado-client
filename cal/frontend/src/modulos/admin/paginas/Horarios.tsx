@@ -170,8 +170,8 @@ function DetalleAsignacion({ asig, grupos, docentes, aulas, franjas, asignacione
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-80">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto">
         <h3 className="font-bold text-gray-900 mb-4 flex items-center justify-between">
           <span>Detalle y Edición</span>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
@@ -370,7 +370,6 @@ export default function Horarios() {
 
   const mutGuardarAsig = useMutation({
     mutationFn: (asigs: Asignacion[]) => clienteApi.patch(`/horarios/${horarioSelId}/asignaciones`, { asignaciones: asigs }),
-    // No invalidamos la query para no resetear el estado local de drag & drop
   });
 
   const exportarExcel = async () => {
@@ -387,7 +386,6 @@ export default function Horarios() {
     wb.creator = 'Sistema CAL';
     const ws = wb.addWorksheet(horarioActual?.periodoNombre ?? 'Horario', { pageSetup: { fitToPage: true, orientation: 'landscape' } });
 
-    // Titulo
     ws.mergeCells(1, 1, 1, diasP.length + 1);
     const titleCell = ws.getCell(1, 1);
     titleCell.value = `Horario Academico - ${horarioActual?.periodoNombre ?? ''} | Generado: ${new Date().toLocaleDateString('es-CO')}`;
@@ -396,7 +394,6 @@ export default function Horarios() {
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     ws.getRow(1).height = 28;
 
-    // Leyenda de colores
     const nivelesConColor = Object.entries(NIVEL_COLOR);
     ws.mergeCells(2, 1, 2, diasP.length + 1);
     const legendCell = ws.getCell(2, 1);
@@ -406,7 +403,6 @@ export default function Horarios() {
     legendCell.alignment = { horizontal: 'center', vertical: 'middle' };
     ws.getRow(2).height = 18;
 
-    // Encabezado de columnas
     const headerRow = ws.getRow(3);
     headerRow.values = ['Horario', ...diasP.map(d => DIAS[d] ?? d)];
     headerRow.eachCell(cell => {
@@ -417,14 +413,12 @@ export default function Horarios() {
     });
     headerRow.height = 22;
 
-    // Filas de datos
     bloques.forEach((blq, rowIdx) => {
       const f = franjas.find(x => x.bloqueIdx === blq);
       const hora = f ? `${f.horaInicio.substring(0, 5)} - ${f.horaFin.substring(0, 5)}` : `Bloque ${blq}`;
       const excelRow = ws.getRow(4 + rowIdx);
       excelRow.height = 72;
 
-      // Celda de hora
       const horaCell = excelRow.getCell(1);
       horaCell.value = hora;
       horaCell.font = { bold: true, size: 10 };
@@ -432,7 +426,6 @@ export default function Horarios() {
       horaCell.alignment = { horizontal: 'center', vertical: 'middle' };
       horaCell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
-      // Celdas de dias
       diasP.forEach((dia, colIdx) => {
         const a = getAsig(dia, blq);
         const cell = excelRow.getCell(2 + colIdx);
@@ -459,7 +452,6 @@ export default function Horarios() {
       });
     });
 
-    // Anchos de columna
     ws.getColumn(1).width = 16;
     diasP.forEach((_, i) => { ws.getColumn(2 + i).width = 30; });
 
@@ -470,49 +462,44 @@ export default function Horarios() {
   const exportarPdf = () => window.print();
 
   return (
-    <div className="p-8 min-h-full bg-gray-50">
+    <div className="p-4 md:p-8 min-h-full bg-gray-50">
       {mostrarModal && (
         <ModalGenerar onClose={() => setMostrarModal(false)} onSuccess={() => qc.invalidateQueries({ queryKey: ['horarios'] })} />
       )}
 
-      {/* Encabezado */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Horarios {horarioActual ? `- ${horarioActual.periodoNombre}` : ''}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Horarios {horarioActual ? `- ${horarioActual.periodoNombre}` : ''}</h1>
+          <p className="text-xs md:text-sm text-gray-500 mt-0.5">
             {horarioActual
-              ? `Generado ${new Date(horarioActual.creadoEn).toLocaleDateString('es-CO')} - Fitness: ${horarioActual.fitness.toFixed(4)} - ${horarioActual.generaciones} generaciones - ${(horarioActual.tiempoMs / 1000).toFixed(1)}s`
+              ? `Generado ${new Date(horarioActual.creadoEn).toLocaleDateString('es-CO')} - Fitness: ${horarioActual.fitness.toFixed(4)}`
               : 'Gestion y generacion de horarios con IA'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {tab === 'activos' ? (
             <>
               {horarios && horarios.length > 0 && (
                 <button onClick={() => { if (confirm('¿Seguro que deseas archivar todos los horarios activos? (Fin de periodo)')) mutArchivarTodos.mutate(); }}
                   disabled={mutArchivarTodos.isPending}
-                  className="px-4 py-2 text-sm text-yellow-700 bg-yellow-100 rounded-xl hover:bg-yellow-200">
-                  {mutArchivarTodos.isPending ? 'Archivando...' : 'Archivar todos (Fin de periodo)'}
+                  className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-yellow-700 bg-yellow-100 rounded-xl hover:bg-yellow-200">
+                  {mutArchivarTodos.isPending ? 'Archivando...' : 'Archivar'}
                 </button>
               )}
               {horarioSelId && (
                 <button onClick={() => { if (confirm('Eliminar este horario?')) mutEliminar.mutate(horarioSelId); }}
-                  className="px-3 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">
+                  className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">
                   Eliminar
                 </button>
               )}
               {tieneData && (
                 <>
-                  <button onClick={exportarExcel} className="px-3 py-2 text-sm text-green-700 border border-green-200 bg-green-50 rounded-xl hover:bg-green-100 flex items-center gap-1.5">
-                    <span>📊</span> Exportar Excel
-                  </button>
-                  <button onClick={exportarPdf} className="px-3 py-2 text-sm text-purple-700 border border-purple-200 bg-purple-50 rounded-xl hover:bg-purple-100 flex items-center gap-1.5">
-                    <span>🖨️</span> Exportar PDF
-                  </button>
+                  <button onClick={exportarExcel} className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-green-700 border border-green-200 bg-green-50 rounded-xl hover:bg-green-100">Excel</button>
+                  <button onClick={exportarPdf} className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-purple-700 border border-purple-200 bg-purple-50 rounded-xl hover:bg-purple-100">PDF</button>
                 </>
               )}
               <button onClick={() => setMostrarModal(true)}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 whitespace-nowrap">
                 + Generar con IA
               </button>
             </>

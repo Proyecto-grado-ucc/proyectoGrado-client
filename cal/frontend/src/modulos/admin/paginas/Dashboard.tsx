@@ -159,9 +159,9 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-8 min-h-full bg-gray-50">
+    <div className="p-4 md:p-8 min-h-full bg-gray-50">
       {/* Encabezado */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-0.5">Dashboard</h1>
           <p className="text-gray-500 text-sm">Panel de control del Sistema CAL</p>
@@ -191,7 +191,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Fila 1: Conteos del sistema ── */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {tarjetasSistema.map((t) => (
           <TarjetaConteo key={t.label} {...t} />
         ))}
@@ -213,7 +213,7 @@ export default function Dashboard() {
       ) : resumen ? (
         <>
           {/* Tarjetas de evaluación */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <TarjetaEval
               label="Evaluaciones completadas"
               valor={resumen.totalEvaluaciones}
