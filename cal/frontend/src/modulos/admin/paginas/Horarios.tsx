@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
 import { useUIStore } from '../../../compartido/storeUI';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SkeletonTable } from '../../../compartido/Skeleton';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -590,7 +591,7 @@ export default function Horarios() {
       {/* Grilla */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {cargandoLista ? (
-          <div className="p-12 text-center text-gray-400 text-sm animate-pulse">Cargando horarios...</div>
+          <SkeletonTable rows={12} cols={7} />
         ) : !horarios?.length ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <p className="text-base font-semibold text-gray-600 mb-1">Aun no hay horarios generados</p>

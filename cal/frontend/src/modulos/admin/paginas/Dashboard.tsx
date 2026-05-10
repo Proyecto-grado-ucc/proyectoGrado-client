@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { clienteApi } from '../../../compartido/api';
 
 // ──────────────────────────────────────────────
@@ -146,10 +147,6 @@ export default function Dashboard() {
   });
 
   const periodoActivo = periodos?.find((p) => p.id === periodoSeleccionado);
-  const maxDistribucion = Math.max(
-    1,
-    ...(resumen?.distribucionPuntuaciones.map((d) => d.cantidad) ?? []),
-  );
 
   const tarjetasSistema: TarjetaConteoProps[] = [
     { label: 'Docentes activos', valor: totalDocentes ?? '—', color: '#3b82f6', icono: '👨‍🏫' },
@@ -249,24 +246,25 @@ export default function Dashboard() {
             <h2 className="text-sm font-semibold text-gray-700 mb-5">
               Distribución de puntuaciones — {periodoActivo?.nombre}
             </h2>
-            <div className="flex items-end gap-4 h-36">
-              {resumen.distribucionPuntuaciones.map((d) => {
-                const pct = Math.round((d.cantidad / maxDistribucion) * 100);
-                const colores: Record<string, string> = {
-                  '1.0-2.0': '#ef4444',
-                  '2.0-3.0': '#f97316',
-                  '3.0-4.0': '#eab308',
-                  '4.0-5.0': '#22c55e',
-                };
-                const color = colores[d.rango] ?? '#6b7280';
-                return (
-                  <div key={d.rango} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-xs font-bold text-gray-700">{d.cantidad}</span>
-                    <div className="w-full rounded-t-lg transition-all" style={{ height: `${pct}%`, backgroundColor: color, minHeight: d.cantidad > 0 ? '8px' : '2px' }} />
-                    <span className="text-[10px] text-gray-500 whitespace-nowrap">{d.rango}</span>
-                  </div>
-                );
-              })}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={resumen.distribucionPuntuaciones}>
+                  <XAxis dataKey="rango" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="cantidad" radius={[8, 8, 0, 0]}>
+                    {resumen.distribucionPuntuaciones.map((entry, index) => {
+                      const colores: Record<string, string> = {
+                        '1.0-2.0': '#ef4444',
+                        '2.0-3.0': '#f97316',
+                        '3.0-4.0': '#eab308',
+                        '4.0-5.0': '#22c55e',
+                      };
+                      return <Cell key={`cell-${index}`} fill={colores[entry.rango] ?? '#6b7280'} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
             {resumen.distribucionPuntuaciones.every((d) => d.cantidad === 0) && (
               <p className="text-center text-gray-400 text-xs mt-4">Sin datos de evaluación para este periodo aún.</p>

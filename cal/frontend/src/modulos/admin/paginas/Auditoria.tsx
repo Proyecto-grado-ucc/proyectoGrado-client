@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clienteApi } from '../../../compartido/api';
+import { SkeletonTable } from '../../../compartido/Skeleton';
 
 interface AuditLog {
   id: number;
@@ -57,7 +58,7 @@ export default function Auditoria() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Cargando...</div>
+          <SkeletonTable rows={10} cols={6} />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">

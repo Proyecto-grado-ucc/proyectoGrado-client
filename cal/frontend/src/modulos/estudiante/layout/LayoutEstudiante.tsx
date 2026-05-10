@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, ClipboardList, Menu, X, LogOut, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, Calendar, ClipboardList, Menu, X, LogOut, GraduationCap, Moon, Sun } from 'lucide-react';
 import { useAuthStore } from '../../../seguridad/store';
 
 const menu = [
@@ -16,11 +16,24 @@ export default function LayoutEstudiante() {
   const manejarSalida = () => { cerrarSesion(); navigate('/login'); };
   const iniciales = usuario?.email?.substring(0, 2).toUpperCase() ?? 'ES';
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [darkMode, setDarkMode] = useState(
+    document.documentElement.classList.contains('dark')
+  );
+
+  const toggleTheme = () => {
+    if (darkMode) {
+      document.documentElement.classList.remove('dark');
+      setDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      setDarkMode(true);
+    }
+  };
 
   return (
-    <div className="flex h-screen bg-gray-50 flex-col md:flex-row">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 flex-col md:flex-row transition-colors duration-300">
       {/* Cabecera Móvil */}
-      <div className="md:hidden flex items-center justify-between bg-blue-950 p-4 text-white shrink-0 border-b border-blue-900 shadow-sm">
+      <div className="md:hidden flex items-center justify-between bg-blue-950 dark:bg-gray-950 p-4 text-white shrink-0 border-b border-blue-900 dark:border-gray-800 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
             <GraduationCap className="w-5 h-5 text-white" />
@@ -41,7 +54,7 @@ export default function LayoutEstudiante() {
       )}
 
       {/* Barra Lateral */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-56 bg-blue-950 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col shadow-xl md:shadow-none ${menuAbierto ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-56 bg-blue-950 dark:bg-gray-950 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col shadow-xl md:shadow-none ${menuAbierto ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between px-6 py-6 border-b border-white/5 md:justify-start">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
@@ -76,6 +89,16 @@ export default function LayoutEstudiante() {
           })}
         </nav>
 
+        <div className="px-6 py-4 flex items-center justify-between border-t border-white/5 bg-black/10">
+          <span className="text-xs text-gray-400 font-medium tracking-wide">TEMA</span>
+          <button
+            onClick={toggleTheme}
+            className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-300 transition-colors border border-white/5"
+          >
+            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        </div>
+
         <div className="px-6 py-6 border-t border-white/5 bg-black/10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-sm font-bold shrink-0">
@@ -92,7 +115,7 @@ export default function LayoutEstudiante() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto bg-gray-50 h-[calc(100vh-72px)] md:h-screen w-full relative"><Outlet /></main>
+      <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 h-[calc(100vh-72px)] md:h-screen w-full relative transition-colors duration-300"><Outlet /></main>
     </div>
   );
 }

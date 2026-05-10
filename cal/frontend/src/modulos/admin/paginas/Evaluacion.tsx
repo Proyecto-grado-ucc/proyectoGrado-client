@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { clienteApi } from '../../../compartido/api';
 import { useUIStore } from '../../../compartido/storeUI';
 
@@ -45,7 +46,6 @@ function TabFormularios() {
   const { abrirConfirmacion } = useUIStore();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ titulo: '', periodoId: '', tipoEvaluacion: 'DESEMPENO' });
-  const [err, setErr] = useState('');
 
   const { data: formularios, isLoading } = useQuery({
     queryKey: ['formularios'],
@@ -62,14 +62,18 @@ function TabFormularios() {
       qc.invalidateQueries({ queryKey: ['formularios'] });
       setModal(false);
       setForm({ titulo: '', periodoId: '', tipoEvaluacion: 'DESEMPENO' });
-      setErr('');
+      toast.success('Formulario creado con éxito');
     },
-    onError: (e: unknown) => setErr(errMsg(e)),
+    onError: (e: unknown) => toast.error(errMsg(e)),
   });
 
   const mutEliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/formularios/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['formularios'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['formularios'] });
+      toast.success('Formulario eliminado');
+    },
+    onError: (e: unknown) => toast.error(errMsg(e)),
   });
 
   return (
@@ -184,20 +188,19 @@ function TabFormularios() {
                       <option value="">Personalizada (Vacía)</option>
                     </select>
                   </div>
-                  {err && <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl mt-4 font-medium">{err}</p>}
                 </div>
               </div>
 
               <div className="p-6 pt-2 flex gap-3 relative z-10 bg-gray-50/50">
                 <button
-                  onClick={() => { setModal(false); setErr(''); }}
+                  onClick={() => setModal(false)}
                   className="flex-1 px-5 py-3 text-sm font-bold text-gray-600 bg-gray-200/50 rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={() => {
-                    if (!form.titulo || !form.periodoId) { setErr('Completa todos los campos.'); return; }
+                    if (!form.titulo || !form.periodoId) { toast.error('Completa todos los campos.'); return; }
                     mutCrear.mutate();
                   }}
                   disabled={mutCrear.isPending}
@@ -221,7 +224,6 @@ function TabAsignaciones() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ formularioId: '', docenteEvaluadoId: '' });
   const [asignarTodos, setAsignarTodos] = useState(false);
-  const [err, setErr] = useState('');
 
   const { data: evaluaciones, isLoading } = useQuery({
     queryKey: ['evaluaciones'],
@@ -251,14 +253,18 @@ function TabAsignaciones() {
       setModal(false);
       setForm({ formularioId: '', docenteEvaluadoId: '' });
       setAsignarTodos(false);
-      setErr('');
+      toast.success('Asignación creada correctamente');
     },
-    onError: (e: unknown) => setErr(errMsg(e)),
+    onError: (e: unknown) => toast.error(errMsg(e)),
   });
 
   const mutEliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/evaluaciones/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluaciones'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['evaluaciones'] });
+      toast.success('Asignación eliminada');
+    },
+    onError: (e: unknown) => toast.error(errMsg(e)),
   });
 
   return (
@@ -376,21 +382,19 @@ function TabAsignaciones() {
                     />
                     <label htmlFor="asignarTodos" className="text-sm text-indigo-900 font-bold cursor-pointer select-none">Asignar a todos los docentes</label>
                   </div>
-                  
-                  {err && <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl mt-4 font-medium">{err}</p>}
                 </div>
               </div>
 
               <div className="p-6 pt-2 flex gap-3 relative z-10 bg-gray-50/50">
                 <button
-                  onClick={() => { setModal(false); setErr(''); setAsignarTodos(false); }}
+                  onClick={() => { setModal(false); setAsignarTodos(false); }}
                   className="flex-1 px-5 py-3 text-sm font-bold text-gray-600 bg-gray-200/50 rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={() => {
-                    if (!form.formularioId || (!asignarTodos && !form.docenteEvaluadoId)) { setErr('Completa todos los campos necesarios.'); return; }
+                    if (!form.formularioId || (!asignarTodos && !form.docenteEvaluadoId)) { toast.error('Completa todos los campos necesarios.'); return; }
                     mutCrear.mutate();
                   }}
                   disabled={mutCrear.isPending}
@@ -411,7 +415,6 @@ function TabAsignaciones() {
 function TabKdd() {
   const [periodoId, setPeriodoId] = useState<number | ''>('');
   const [ejecutando, setEjecutando] = useState(false);
-  const [msgKdd, setMsgKdd] = useState('');
 
   const { data: periodos } = useQuery({
     queryKey: ['periodos-kdd'],
@@ -428,16 +431,15 @@ function TabKdd() {
   });
 
   const ejecutar = async () => {
-    if (!periodoId) { setMsgKdd('Selecciona un periodo primero.'); return; }
+    if (!periodoId) { toast.error('Selecciona un periodo primero.'); return; }
     setEjecutando(true);
-    setMsgKdd('');
     try {
       const { data } = await clienteApi.post('/kdd/ejecutar', { periodoId: Number(periodoId) });
       const r = data as { resultados: number; alertas: number };
-      setMsgKdd(`KDD completado: ${r.resultados} resultados, ${r.alertas} alertas generadas.`);
+      toast.success(`KDD completado: ${r.resultados} resultados, ${r.alertas} alertas.`);
       refetch();
     } catch (e: unknown) {
-      setMsgKdd('Error: ' + errMsg(e));
+      toast.error('Error: ' + errMsg(e));
     } finally {
       setEjecutando(false);
     }
@@ -468,11 +470,6 @@ function TabKdd() {
             </>
           ) : 'Ejecutar KDD'}
         </button>
-        {msgKdd && (
-          <span className={`text-xs px-3 py-1.5 rounded-lg ${msgKdd.startsWith('Error') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
-            {msgKdd}
-          </span>
-        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

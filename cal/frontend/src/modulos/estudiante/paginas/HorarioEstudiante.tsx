@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { clienteApi } from '../../../compartido/api';
 import { useAuthStore } from '../../../seguridad/store';
 
@@ -28,7 +29,6 @@ export default function HorarioEstudiante() {
 
   const queryClient = useQueryClient();
   const [codigoIngresado, setCodigoIngresado] = useState('');
-  const [errorMatricula, setErrorMatricula] = useState('');
   const [mostrarModalBaja, setMostrarModalBaja] = useState(false);
   const [confirmacionBaja, setConfirmacionBaja] = useState('');
 
@@ -40,10 +40,10 @@ export default function HorarioEstudiante() {
     mutationFn: (codigoAcceso: string) => clienteApi.post('/estudiantes/matricular', { codigoAcceso }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['estudiantes-he'] });
-      setErrorMatricula('');
+      toast.success('¡Matriculado con éxito!');
     },
     onError: (e: any) => {
-      setErrorMatricula(e?.response?.data?.message ?? 'Error al matricularse');
+      toast.error(e?.response?.data?.message ?? 'Error al matricularse');
     }
   });
 
@@ -53,6 +53,10 @@ export default function HorarioEstudiante() {
       queryClient.invalidateQueries({ queryKey: ['estudiantes-he'] });
       setMostrarModalBaja(false);
       setConfirmacionBaja('');
+      toast.success('Te has dado de baja del grupo.');
+    },
+    onError: (e: any) => {
+      toast.error(e?.response?.data?.message ?? 'Error al darse de baja');
     }
   });
 
@@ -175,7 +179,6 @@ export default function HorarioEstudiante() {
                 required
               />
             </div>
-            {errorMatricula && <p className="text-xs text-red-600 bg-red-50 p-3 rounded-lg mb-4 text-left">{errorMatricula}</p>}
             <button 
               type="submit" 
               disabled={mutMatricular.isPending || !codigoIngresado}
