@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clienteApi } from '../../../compartido/api';
+import * as XLSX from 'xlsx';
 
 interface Periodo { id: number; nombre: string; fechaInicio: string; fechaFin: string; }
 interface Asignacion { grupoId: number; docenteId: number; aulaId: number; franjaId: number; }
@@ -147,64 +148,71 @@ function DetalleAsignacion({ asig, grupos, docentes, aulas, onClose }: {
   );
 }
 
-// ── Grilla semanal ─────────────────────────────────────────────────────────────
-function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, niveles, filtroDocente, filtroAula }: {
+// ── Grilla semanal con Drag & Drop ────────────────────────────────────────────
+function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, niveles, filtroDocente, filtroAula, onAsignacionesChange, guardando }: {
   horario: Horario; franjas: Franja[]; grupos: Grupo[]; docentes: Docente[]; aulas: Aula[];
   cursos: Curso[]; niveles: Nivel[];
   filtroDocente: string; filtroAula: string;
+  onAsignacionesChange: (asigs: Asignacion[]) => void;
+  guardando: boolean;
 }) {
   const [detalle, setDetalle] = useState<Asignacion | null>(null);
+  const [asignaciones, setAsignaciones] = useState<Asignacion[]>(horario.asignaciones);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dropError, setDropError] = useState('');
+  const dragIdxRef = useRef<number | null>(null);
+
+  useEffect(() => { setAsignaciones(horario.asignaciones); }, [horario]);
+
   const diasPresentes = [...new Set(franjas.map(f => f.diaSemana))].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
-  const getHoraParaSort = (bloque: number) => {
-    const f = franjas.find(x => x.bloqueIdx === bloque);
-    return f ? f.horaInicio : '23:59:59';
-  };
+  const getHoraParaSort = (bloque: number) => { const f = franjas.find(x => x.bloqueIdx === bloque); return f ? f.horaInicio : '23:59:59'; };
   const bloquesUnicos = [...new Set(franjas.map(f => f.bloqueIdx))].sort((a, b) => getHoraParaSort(a).localeCompare(getHoraParaSort(b)));
 
-  const asigFiltradas = horario.asignaciones.filter(a => {
+  const asigFiltradas = asignaciones.filter(a => {
     if (filtroDocente && String(a.docenteId) !== filtroDocente) return false;
     if (filtroAula && String(a.aulaId) !== filtroAula) return false;
     return true;
   });
 
-  const getAsig = (dia: string, bloque: number) => {
-    const franja = franjas.find(f => f.diaSemana === dia && f.bloqueIdx === bloque);
-    if (!franja) return null;
-    return asigFiltradas.find(a => a.franjaId === franja.id) ?? null;
+  const getFranjaId = (dia: string, bloque: number) => franjas.find(f => f.diaSemana === dia && f.bloqueIdx === bloque)?.id ?? null;
+  const getAsig = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return null; return asigFiltradas.find(a => a.franjaId === fId) ?? null; };
+  const getAsigGlobal = (dia: string, bloque: number) => { const fId = getFranjaId(dia, bloque); if (!fId) return null; return asignaciones.find(a => a.franjaId === fId) ?? null; };
+  const getColor = (asig: Asignacion) => { const g = grupos.find(x => x.id === asig.grupoId); const c = cursos.find(x => x.id === g?.cursoId); const n = niveles.find(x => x.id === c?.nivelId); return NIVEL_COLOR[n?.codigo ?? ''] ?? '#6b7280'; };
+  const getHora = (bloque: number) => { const f = franjas.find(x => x.bloqueIdx === bloque); return f ? `${f.horaInicio.substring(0, 5)}-${f.horaFin.substring(0, 5)}` : `Bloque ${bloque}`; };
+
+  const handleDrop = (dia: string, bloque: number) => {
+    const idx = dragIdxRef.current;
+    if (idx === null) return;
+    const fIdDest = getFranjaId(dia, bloque);
+    if (!fIdDest) return;
+    // Check if destination is occupied (globally, not just filtered)
+    const ocupado = getAsigGlobal(dia, bloque);
+    if (ocupado) { setDropError('Esa celda ya está ocupada.'); setTimeout(() => setDropError(''), 3000); setDragIdx(null); dragIdxRef.current = null; return; }
+    const nuevas = asignaciones.map((a, i) => i === idx ? { ...a, franjaId: fIdDest } : a);
+    setAsignaciones(nuevas);
+    setDragIdx(null);
+    dragIdxRef.current = null;
+    onAsignacionesChange(nuevas);
   };
 
-  const getColor = (asig: Asignacion) => {
-    const grupo = grupos.find(g => g.id === asig.grupoId);
-    const curso = cursos.find(c => c.id === grupo?.cursoId);
-    const nivel = niveles.find(n => n.id === curso?.nivelId);
-    return NIVEL_COLOR[nivel?.codigo ?? ''] ?? '#6b7280';
-  };
-
-  const getHora = (bloque: number) => {
-    const f = franjas.find(x => x.bloqueIdx === bloque);
-    return f ? `${f.horaInicio.substring(0, 5)}-${f.horaFin.substring(0, 5)}` : `Bloque ${bloque}`;
-  };
-
-  if (!asigFiltradas.length) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-        <p className="text-sm font-medium">Sin asignaciones para el filtro seleccionado</p>
-        <p className="text-xs mt-1">Ajusta los filtros o genera un nuevo horario</p>
-      </div>
-    );
-  }
+  if (!asigFiltradas.length) return (
+    <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+      <p className="text-sm font-medium">Sin asignaciones para el filtro seleccionado</p>
+      <p className="text-xs mt-1">Ajusta los filtros o genera un nuevo horario</p>
+    </div>
+  );
 
   return (
     <>
       {detalle && <DetalleAsignacion asig={detalle} grupos={grupos} docentes={docentes} aulas={aulas} onClose={() => setDetalle(null)} />}
-      <div className="overflow-x-auto">
+      {dropError && <div className="mx-4 mt-2 mb-0 px-3 py-2 bg-red-50 text-red-600 text-xs rounded-lg">{dropError}</div>}
+      {guardando && <div className="mx-4 mt-2 mb-0 px-3 py-2 bg-blue-50 text-blue-600 text-xs rounded-lg flex items-center gap-2"><span className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />Guardando cambios...</div>}
+      <div className="overflow-x-auto p-4" id="horario-grilla-print">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr>
               <th className="bg-gray-50 px-3 py-2 text-left text-gray-500 font-semibold border border-gray-100 w-28">Horario</th>
-              {diasPresentes.map(d => (
-                <th key={d} className="bg-gray-50 px-3 py-2 text-center text-gray-700 font-semibold border border-gray-100">{DIAS[d] ?? d}</th>
-              ))}
+              {diasPresentes.map(d => <th key={d} className="bg-gray-50 px-3 py-2 text-center text-gray-700 font-semibold border border-gray-100">{DIAS[d] ?? d}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -213,22 +221,30 @@ function GrillaHorario({ horario, franjas, grupos, docentes, aulas, cursos, nive
                 <td className="bg-gray-50 px-3 py-2 text-gray-500 border border-gray-100 whitespace-nowrap font-medium text-xs">{getHora(bloque)}</td>
                 {diasPresentes.map(dia => {
                   const asig = getAsig(dia, bloque);
+                  const asigIdx = asig ? asignaciones.findIndex(a => a.franjaId === asig.franjaId) : -1;
                   const grupo = asig ? grupos.find(g => g.id === asig.grupoId) : null;
                   const docente = asig ? docentes.find(d => d.id === asig.docenteId) : null;
                   const aula = asig ? aulas.find(a => a.id === asig.aulaId) : null;
                   const color = asig ? getColor(asig) : '';
+                  const isDragging = dragIdx === asigIdx && asigIdx !== -1;
                   return (
-                    <td key={dia} className="border border-gray-100 p-1 align-top h-20 w-36">
+                    <td key={dia} className="border border-gray-100 p-1 align-top h-20 w-36"
+                      onDragOver={e => { e.preventDefault(); }}
+                      onDrop={() => handleDrop(dia, bloque)}>
                       {asig ? (
-                        <button onClick={() => setDetalle(asig)}
-                          className="w-full h-full rounded-lg p-1.5 text-left hover:opacity-80 transition-opacity"
+                        <div
+                          draggable
+                          onDragStart={() => { setDragIdx(asigIdx); dragIdxRef.current = asigIdx; }}
+                          onDragEnd={() => { setDragIdx(null); dragIdxRef.current = null; }}
+                          onClick={() => setDetalle(asig)}
+                          className={`w-full h-full rounded-lg p-1.5 text-left cursor-grab active:cursor-grabbing transition-all ${isDragging ? 'opacity-40 scale-95' : 'hover:opacity-80'}`}
                           style={{ backgroundColor: `${color}20`, borderLeft: `3px solid ${color}` }}>
                           <p className="font-semibold text-gray-800 truncate text-xs">{grupo?.cursoNombre ?? `Grupo ${asig.grupoId}`}</p>
                           <p className="text-gray-500 truncate text-xs">{grupo?.codigo ?? ''}</p>
                           <p className="text-gray-400 truncate text-xs">{(docente?.usuarioNombre ?? '').split(' ')[0]} - {aula?.codigo ?? ''}</p>
-                        </button>
+                        </div>
                       ) : (
-                        <div className="w-full h-full rounded-lg border border-dashed border-gray-200" />
+                        <div className="w-full h-full rounded-lg border border-dashed border-gray-200 transition-colors" />
                       )}
                     </td>
                   );
@@ -285,6 +301,57 @@ export default function Horarios() {
   const horarioActual = horarios?.find(h => h.id === horarioSelId);
   const tieneData = franjas && grupos && docentes && aulas && cursos && niveles && horarioDetalle;
 
+  const mutGuardarAsig = useMutation({
+    mutationFn: (asigs: Asignacion[]) => clienteApi.patch(`/horarios/${horarioSelId}/asignaciones`, { asignaciones: asigs }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['horario', horarioSelId] }),
+  });
+
+  const exportarExcel = () => {
+    if (!horarioDetalle || !franjas || !grupos || !docentes || !aulas || !cursos || !niveles) return;
+    const diasP = [...new Set(franjas.map(f => f.diaSemana))].sort((a, b) => ORDEN_DIAS.indexOf(a) - ORDEN_DIAS.indexOf(b));
+    const getHorS = (b: number) => { const f = franjas.find(x => x.bloqueIdx === b); return f ? f.horaInicio : '23:59:59'; };
+    const bloques = [...new Set(franjas.map(f => f.bloqueIdx))].sort((a, b) => getHorS(a).localeCompare(getHorS(b)));
+    const getAsig = (dia: string, blq: number) => { const fId = franjas.find(f => f.diaSemana === dia && f.bloqueIdx === blq)?.id; return fId ? horarioDetalle.asignaciones.find(a => a.franjaId === fId) : null; };
+    const getColor = (asig: Asignacion) => { const g = grupos.find(x => x.id === asig.grupoId); const c = cursos.find(x => x.id === g?.cursoId); const n = niveles.find(x => x.id === c?.nivelId); return NIVEL_COLOR[n?.codigo ?? ''] ?? '#6b7280'; };
+    const COLORES_NIVEL: Record<string, string> = { '#3b82f6': 'FF93C5F0', '#8b5cf6': 'FFCBB5FA', '#10b981': 'FF6EE7B7', '#f59e0b': 'FFFDE68A', '#ec4899': 'FFFBCFE8', '#6b7280': 'FFD1D5DB' };
+    const header = ['Horario', ...diasP.map(d => DIAS[d] ?? d)];
+    const rows = bloques.map(blq => {
+      const f = franjas.find(x => x.bloqueIdx === blq);
+      const hora = f ? `${f.horaInicio.substring(0,5)}-${f.horaFin.substring(0,5)}` : `Bloque ${blq}`;
+      return [hora, ...diasP.map(dia => {
+        const a = getAsig(dia, blq); if (!a) return '';
+        const g = grupos.find(x => x.id === a.grupoId); const d = docentes.find(x => x.id === a.docenteId); const au = aulas.find(x => x.id === a.aulaId);
+        return `${g?.cursoNombre ?? ''} (${g?.codigo ?? ''})
+${d?.usuarioNombre ?? ''}
+${au?.codigo ?? ''}`;
+      })];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    // Apply styles
+    const range = XLSX.utils.decode_range(ws['!ref'] ?? 'A1');
+    for (let R = 1; R <= range.e.r; R++) {
+      for (let C = 1; C <= range.e.c; C++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+        if (cell && cell.v) {
+          const dia = diasP[C - 1]; const blq = bloques[R - 1];
+          const a = getAsig(dia, blq);
+          if (a) { const hex = getColor(a); const argb = COLORES_NIVEL[hex] ?? 'FFE5E7EB';
+            cell.s = { fill: { fgColor: { rgb: argb } }, font: { bold: false, sz: 9 }, alignment: { wrapText: true, vertical: 'top' }, border: { top: {style:'thin'}, bottom: {style:'thin'}, left: {style:'thin'}, right: {style:'thin'} } };
+          }
+        }
+      }
+    }
+    // Header style
+    header.forEach((_, C) => { const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })]; if (cell) cell.s = { font: { bold: true, color: { rgb: 'FFFFFFFF' } }, fill: { fgColor: { rgb: 'FF1E40AF' } }, alignment: { horizontal: 'center' } }; });
+    ws['!cols'] = [{ wch: 14 }, ...diasP.map(() => ({ wch: 28 }))];
+    ws['!rows'] = [{ hpt: 20 }, ...bloques.map(() => ({ hpt: 60 }))];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, horarioActual?.periodoNombre ?? 'Horario');
+    XLSX.writeFile(wb, `horario_${horarioActual?.periodoNombre ?? 'export'}.xlsx`);
+  };
+
+  const exportarPdf = () => window.print();
+
   return (
     <div className="p-8 min-h-full bg-gray-50">
       {mostrarModal && (
@@ -316,6 +383,16 @@ export default function Horarios() {
                   className="px-3 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">
                   Eliminar
                 </button>
+              )}
+              {tieneData && (
+                <>
+                  <button onClick={exportarExcel} className="px-3 py-2 text-sm text-green-700 border border-green-200 bg-green-50 rounded-xl hover:bg-green-100 flex items-center gap-1.5">
+                    <span>📊</span> Exportar Excel
+                  </button>
+                  <button onClick={exportarPdf} className="px-3 py-2 text-sm text-purple-700 border border-purple-200 bg-purple-50 rounded-xl hover:bg-purple-100 flex items-center gap-1.5">
+                    <span>🖨️</span> Exportar PDF
+                  </button>
+                </>
               )}
               <button onClick={() => setMostrarModal(true)}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700">
@@ -397,7 +474,13 @@ export default function Horarios() {
         ) : cargandoDetalle ? (
           <div className="p-12 text-center text-gray-400 text-sm animate-pulse">Cargando detalle...</div>
         ) : tieneData ? (
-          <GrillaHorario horario={horarioDetalle} franjas={franjas} grupos={grupos} docentes={docentes} aulas={aulas} cursos={cursos} niveles={niveles} filtroDocente={filtroDocente} filtroAula={filtroAula} />
+          <GrillaHorario
+            horario={horarioDetalle} franjas={franjas} grupos={grupos} docentes={docentes}
+            aulas={aulas} cursos={cursos} niveles={niveles}
+            filtroDocente={filtroDocente} filtroAula={filtroAula}
+            onAsignacionesChange={(asigs) => mutGuardarAsig.mutate(asigs)}
+            guardando={mutGuardarAsig.isPending}
+          />
         ) : null}
       </div>
     </div>
