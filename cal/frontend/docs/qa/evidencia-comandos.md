@@ -192,6 +192,10 @@ Capturas tomadas con Chrome Headless sobre la aplicacion publicada:
 
 - `docs/qa/evidencias/frontend-login-desktop.png`
 - `docs/qa/evidencias/frontend-login-mobile.png`
+- `docs/qa/evidencias/backend-health.png`
+- `docs/qa/evidencias/github-issues-qa.png`
+- `docs/qa/evidencias/w3c-validator.png`
+- `docs/qa/evidencias/matriz-pruebas-github.png`
 
 Comando usado:
 
@@ -211,6 +215,42 @@ Comando usado:
   --screenshot=docs/qa/evidencias/frontend-login-mobile.png \
   --window-size=390,844 \
   https://frontend-production-da48.up.railway.app/login
+```
+
+Capturas adicionales generadas para sustentacion:
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new \
+  --disable-gpu \
+  --no-sandbox \
+  --screenshot=docs/qa/evidencias/backend-health.png \
+  --window-size=1200,800 \
+  https://api-production-bad2.up.railway.app/api/health
+
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new \
+  --disable-gpu \
+  --no-sandbox \
+  --screenshot=docs/qa/evidencias/github-issues-qa.png \
+  --window-size=1600,1000 \
+  "https://github.com/Proyecto-grado-ucc/proyectoGrado-client/issues?q=is%3Aissue"
+
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new \
+  --disable-gpu \
+  --no-sandbox \
+  --screenshot=docs/qa/evidencias/w3c-validator.png \
+  --window-size=1400,1000 \
+  "https://validator.w3.org/nu/?doc=https%3A%2F%2Ffrontend-production-da48.up.railway.app%2F"
+
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new \
+  --disable-gpu \
+  --no-sandbox \
+  --screenshot=docs/qa/evidencias/matriz-pruebas-github.png \
+  --window-size=1600,1200 \
+  "https://github.com/Proyecto-grado-ucc/proyectoGrado-client/blob/qa/pruebas-software/cal/frontend/docs/qa/plan-pruebas-iso-29119.md"
 ```
 
 ## Pruebas exploratorias y Ad-Hoc
