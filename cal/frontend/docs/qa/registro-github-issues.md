@@ -7,6 +7,14 @@ La consigna solicita gestionar los casos de prueba en una plataforma colaborativ
 - Done / Aprobada
 - Failed / Fallida
 
+Project creado:
+
+```text
+https://github.com/orgs/Proyecto-grado-ucc/projects/1
+```
+
+Campo de estado usado: `Estado QA`.
+
 ## Labels sugeridos
 
 - `qa`
