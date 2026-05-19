@@ -196,6 +196,7 @@ Capturas tomadas con Chrome Headless sobre la aplicacion publicada:
 - `docs/qa/evidencias/github-issues-qa.png`
 - `docs/qa/evidencias/w3c-validator.png`
 - `docs/qa/evidencias/matriz-pruebas-github.png`
+- `docs/qa/evidencias/status-page.png`
 
 Comando usado:
 
@@ -220,6 +221,15 @@ Comando usado:
 Capturas adicionales generadas para sustentacion:
 
 ```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new \
+  --disable-gpu \
+  --no-sandbox \
+  --virtual-time-budget=8000 \
+  --screenshot=docs/qa/evidencias/status-page.png \
+  --window-size=1600,1100 \
+  "https://frontend-production-da48.up.railway.app/status"
+
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
   --headless=new \
   --disable-gpu \
