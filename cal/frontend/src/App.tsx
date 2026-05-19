@@ -6,6 +6,7 @@ import Login from './seguridad/paginas/Login';
 import RecuperarContrasena from './seguridad/paginas/RecuperarContrasena';
 import RestablecerContrasena from './seguridad/paginas/RestablecerContrasena';
 import Inicio from './paginas/Inicio';
+import Status from './paginas/Status';
 import LayoutAdmin from './modulos/admin/layout/LayoutAdmin';
 import Dashboard from './modulos/admin/paginas/Dashboard';
 import Horarios from './modulos/admin/paginas/Horarios';
@@ -38,6 +39,7 @@ function RutasAnimadas() {
         <Route path="/login" element={<TransicionPagina><Login /></TransicionPagina>} />
         <Route path="/recuperar-contrasena" element={<TransicionPagina><RecuperarContrasena /></TransicionPagina>} />
         <Route path="/nueva-contrasena" element={<TransicionPagina><RestablecerContrasena /></TransicionPagina>} />
+        <Route path="/status" element={<TransicionPagina><Status /></TransicionPagina>} />
 
         <Route path="/admin" element={<RutaProtegida><LayoutAdmin /></RutaProtegida>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
