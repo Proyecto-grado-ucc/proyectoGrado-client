@@ -97,8 +97,9 @@ Luego mostrar:
 
 1. `plan-pruebas-iso-29119.md`
 2. `evidencia-comandos.md`
-3. `incidencias-qa.md`
-4. Issues de GitHub
+3. `evidencia-por-caso.md`
+4. `incidencias-qa.md`
+5. Issues de GitHub
 
 ## Orden recomendado de presentacion
 

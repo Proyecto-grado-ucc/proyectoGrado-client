@@ -50,6 +50,7 @@ Este documento registra pruebas funcionales y no funcionales aplicables al proye
 - Las pruebas fallidas deben quedar registradas como incidencia y retornar al estado To Do/Inicio.
 - Las pruebas pendientes deben tener responsable y fecha de ejecucion.
 - La evidencia debe incluir capturas, salida de comandos o video, segun aplique.
+- La relacion completa caso-evidencia esta registrada en `docs/qa/evidencia-por-caso.md`.
 
 ## Recomendaciones inmediatas
 

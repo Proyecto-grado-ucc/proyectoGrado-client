@@ -197,6 +197,14 @@ Capturas tomadas con Chrome Headless sobre la aplicacion publicada:
 - `docs/qa/evidencias/w3c-validator.png`
 - `docs/qa/evidencias/matriz-pruebas-github.png`
 - `docs/qa/evidencias/status-page.png`
+- `docs/qa/evidencias/disponibilidad-latencia.png`
+- `docs/qa/evidencias/carga-ligera.png`
+- `docs/qa/evidencias/lighthouse.png`
+- `docs/qa/evidencias/tests-frontend.png`
+- `docs/qa/evidencias/tests-backend.png`
+- `docs/qa/evidencias/seguridad-401.png`
+- `docs/qa/evidencias/traceroute.png`
+- `docs/qa/evidencias/exploratorias-adhoc.png`
 
 Comando usado:
 
