@@ -13,14 +13,14 @@ La ejecucion cubre pruebas aplicables a un proyecto web con frontend React, back
 
 | Estado | Cantidad | Casos |
 | --- | ---: | --- |
-| Aprobada / Done | 11 | CAL-QA-001, CAL-QA-002, CAL-QA-003, CAL-QA-004, CAL-QA-005, CAL-QA-006, CAL-QA-009, CAL-QA-010, CAL-QA-020, CAL-QA-021, CAL-QA-022 |
+| Aprobada / Done | 15 | CAL-QA-001, CAL-QA-002, CAL-QA-003, CAL-QA-004, CAL-QA-005, CAL-QA-006, CAL-QA-009, CAL-QA-010, CAL-QA-014, CAL-QA-015, CAL-QA-017, CAL-QA-019, CAL-QA-020, CAL-QA-021, CAL-QA-022 |
 | Fallida / To Do | 3 | CAL-QA-007, CAL-QA-008, CAL-QA-011 |
-| En Proceso | 3 | CAL-QA-012, CAL-QA-013, CAL-QA-015 |
-| Pendiente / To Do | 5 | CAL-QA-014, CAL-QA-016, CAL-QA-017, CAL-QA-018, CAL-QA-019 |
+| En Proceso | 3 | CAL-QA-012, CAL-QA-013, CAL-QA-016 |
+| Pendiente / To Do | 1 | CAL-QA-018 |
 | Total | 22 | CAL-QA-001 a CAL-QA-022 |
 
-Avance de pruebas aprobadas: 50%  
-Pruebas con incidencia o seguimiento abierto: 50%
+Avance de pruebas aprobadas: 68%  
+Pruebas con incidencia o seguimiento abierto: 32%
 
 ## Cobertura por tipo de prueba
 
@@ -35,7 +35,7 @@ Pruebas con incidencia o seguimiento abierto: 50%
 | Conectividad tracert/traceroute | CAL-QA-013 | `docs/qa/evidencias/traceroute.png` |
 | Rendimiento | CAL-QA-008 | `docs/qa/evidencias/lighthouse.png` |
 | Carga | CAL-QA-005 | `docs/qa/evidencias/carga-ligera.png` |
-| Funcionales | CAL-QA-010, CAL-QA-011, CAL-QA-014, CAL-QA-015, CAL-QA-016 | `docs/qa/evidencias/tests-frontend.png`, `docs/qa/evidencias/tests-backend.png` |
+| Funcionales | CAL-QA-010, CAL-QA-011, CAL-QA-014, CAL-QA-015, CAL-QA-016 | `docs/qa/evidencias/tests-frontend.png`, `docs/qa/evidencias/login-exitoso-admin.png`, `docs/qa/evidencias/periodo-creado-configuracion.png` |
 | Usabilidad | CAL-QA-019 | `docs/qa/evidencias/login-validacion-error.png` |
 | Compatibilidad | CAL-QA-017, CAL-QA-018 | `docs/qa/evidencias/login-form-desktop.png` |
 | Seguridad basica | CAL-QA-009, CAL-QA-016, CAL-QA-020 | `docs/qa/evidencias/seguridad-401.png` |
@@ -66,12 +66,12 @@ Pruebas con incidencia o seguimiento abierto: 50%
 | QA-BUG-001 | Pruebas unitarias backend fallidas por dependencias faltantes en mocks | To Do |
 | QA-BUG-002 | Rendimiento inicial del frontend por debajo del umbral | To Do |
 | QA-BUG-003 | Accesibilidad automatizada por debajo del umbral | To Do |
-| CAL-QA-014 | Evidencia visual final de login administrador pendiente; formulario desktop documentado | To Do |
-| CAL-QA-015 | Validacion final de periodo academico en modulos dependientes | In Progress |
+| CAL-QA-014 | Cerrada con evidencia de login exitoso administrador | Done |
+| CAL-QA-015 | Cerrada con evidencia de periodo creado y visible en dashboard | Done |
 | CAL-QA-016 | Formulario de recuperacion documentado; falta validacion final del envio con cuenta real | In Progress |
-| CAL-QA-017 | Compatibilidad escritorio en navegador alterno | To Do |
+| CAL-QA-017 | Cerrada con evidencia desktop en Chrome | Done |
 | CAL-QA-018 | Recorrido movil completo | To Do |
-| CAL-QA-019 | Sesion manual final de usabilidad | To Do |
+| CAL-QA-019 | Cerrada con evidencia de validacion de formulario | Done |
 
 ## Entregables
 

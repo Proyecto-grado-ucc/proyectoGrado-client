@@ -194,6 +194,10 @@ Capturas tomadas con Chrome Headless sobre la aplicacion publicada:
 - `docs/qa/evidencias/login-form-desktop.png`
 - `docs/qa/evidencias/login-validacion-error.png`
 - `docs/qa/evidencias/recuperacion-contrasena-form.png`
+- `docs/qa/evidencias/login-exitoso-admin.png`
+- `docs/qa/evidencias/periodo-formulario-creacion.png`
+- `docs/qa/evidencias/periodo-creado-configuracion.png`
+- `docs/qa/evidencias/periodo-visible-dashboard.png`
 - `docs/qa/evidencias/backend-health.png`
 - `docs/qa/evidencias/github-issues-qa.png`
 - `docs/qa/evidencias/w3c-validator.png`
@@ -272,6 +276,12 @@ Capturas manuales adicionales tomadas para reforzar casos funcionales y de usabi
 - `docs/qa/evidencias/login-form-desktop.png`
 - `docs/qa/evidencias/login-validacion-error.png`
 - `docs/qa/evidencias/recuperacion-contrasena-form.png`
+- `docs/qa/evidencias/login-exitoso-admin.png`
+- `docs/qa/evidencias/periodo-formulario-creacion.png`
+- `docs/qa/evidencias/periodo-creado-configuracion.png`
+- `docs/qa/evidencias/periodo-visible-dashboard.png`
+
+El periodo de evidencia creado fue `QA Evidencia 2026-05-21`. La captura de Dashboard demuestra que el periodo queda disponible fuera del modulo de Configuracion.
 
 ## Pruebas exploratorias y Ad-Hoc
 

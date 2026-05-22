@@ -34,12 +34,12 @@ Los casos tecnicos iniciales y los casos manuales principales fueron separados e
 | CAL-QA-011 | #3 `CAL-QA-011 - Pruebas unitarias backend` | Todo |
 | CAL-QA-012 | #23 `CAL-QA-012 - Cobertura backend` | In Progress |
 | CAL-QA-013 | #24 `CAL-QA-013 - Conectividad por traceroute` | In Progress |
-| CAL-QA-014 | #8 `CAL-QA-014 - Flujo login administrador` | Todo |
-| CAL-QA-015 | #9 `CAL-QA-015 - Gestion de periodos academicos` | In Progress |
+| CAL-QA-014 | #8 `CAL-QA-014 - Flujo login administrador` | Done |
+| CAL-QA-015 | #9 `CAL-QA-015 - Gestion de periodos academicos` | Done |
 | CAL-QA-016 | #10 `CAL-QA-016 - Recuperacion de contrasena` | In Progress |
-| CAL-QA-017 | #11 `CAL-QA-017 - Compatibilidad escritorio` | Todo |
+| CAL-QA-017 | #11 `CAL-QA-017 - Compatibilidad escritorio` | Done |
 | CAL-QA-018 | #12 `CAL-QA-018 - Compatibilidad movil` | Todo |
-| CAL-QA-019 | #13 `CAL-QA-019 - Usabilidad de formularios` | Todo |
+| CAL-QA-019 | #13 `CAL-QA-019 - Usabilidad de formularios` | Done |
 | CAL-QA-020 | #14 `CAL-QA-020 - Seguridad basica de rutas protegidas` | Done |
 | CAL-QA-021 | #25 `CAL-QA-021 - Sesion exploratoria de despliegue y autenticacion` | Done |
 | CAL-QA-022 | #26 `CAL-QA-022 - Pruebas Ad-Hoc sobre API y cache de periodos` | Done |
