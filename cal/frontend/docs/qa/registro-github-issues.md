@@ -10,10 +10,41 @@ La consigna solicita gestionar los casos de prueba en una plataforma colaborativ
 Project creado:
 
 ```text
-https://github.com/orgs/Proyecto-grado-ucc/projects/1
+https://github.com/orgs/Proyecto-grado-ucc/projects/2
 ```
 
-Campo de estado usado: `Estado QA`.
+Campo de estado usado: `Status`.
+
+## Registro final en GitHub
+
+Los casos tecnicos iniciales y los casos manuales principales fueron separados en issues individuales para que cada prueba tenga trazabilidad propia dentro del Project.
+
+| Caso | Issue | Estado Project |
+| --- | --- | --- |
+| CAL-QA-001 | #15 `CAL-QA-001 - Validacion de disponibilidad del frontend` | Done |
+| CAL-QA-002 | #16 `CAL-QA-002 - Validacion de disponibilidad del backend` | Done |
+| CAL-QA-003 | #17 `CAL-QA-003 - Latencia inicial del frontend` | Done |
+| CAL-QA-004 | #18 `CAL-QA-004 - Latencia inicial del backend` | Done |
+| CAL-QA-005 | #19 `CAL-QA-005 - Prueba de carga ligera del backend` | Done |
+| CAL-QA-006 | #20 `CAL-QA-006 - Validacion W3C del HTML publico` | Done |
+| CAL-QA-007 | #5 `CAL-QA-007 - Accesibilidad automatizada con Lighthouse` | Todo |
+| CAL-QA-008 | #4 `CAL-QA-008 - Rendimiento inicial con Lighthouse` | Todo |
+| CAL-QA-009 | #21 `CAL-QA-009 - Buenas practicas web con Lighthouse` | Done |
+| CAL-QA-010 | #22 `CAL-QA-010 - Pruebas unitarias frontend` | Done |
+| CAL-QA-011 | #3 `CAL-QA-011 - Pruebas unitarias backend` | Todo |
+| CAL-QA-012 | #23 `CAL-QA-012 - Cobertura backend` | In Progress |
+| CAL-QA-013 | #24 `CAL-QA-013 - Conectividad por traceroute` | In Progress |
+| CAL-QA-014 | #8 `CAL-QA-014 - Flujo login administrador` | Todo |
+| CAL-QA-015 | #9 `CAL-QA-015 - Gestion de periodos academicos` | In Progress |
+| CAL-QA-016 | #10 `CAL-QA-016 - Recuperacion de contrasena` | In Progress |
+| CAL-QA-017 | #11 `CAL-QA-017 - Compatibilidad escritorio` | Todo |
+| CAL-QA-018 | #12 `CAL-QA-018 - Compatibilidad movil` | Todo |
+| CAL-QA-019 | #13 `CAL-QA-019 - Usabilidad de formularios` | Todo |
+| CAL-QA-020 | #14 `CAL-QA-020 - Seguridad basica de rutas protegidas` | Done |
+| CAL-QA-021 | #25 `CAL-QA-021 - Sesion exploratoria de despliegue y autenticacion` | Done |
+| CAL-QA-022 | #26 `CAL-QA-022 - Pruebas Ad-Hoc sobre API y cache de periodos` | Done |
+
+Los issues agrupados historicos #2, #6 y #7 se conservaron cerrados como referencia, pero fueron retirados del Project para evitar duplicidad visual.
 
 ## Labels sugeridos
 
