@@ -277,11 +277,11 @@ Capturas manuales adicionales tomadas para reforzar casos funcionales y de usabi
 
 Durante el proceso de estabilizacion del despliegue se ejecutaron pruebas exploratorias y Ad-Hoc para investigar fallos reportados desde la interfaz:
 
-- Recuperacion de contrasena: se identifico que el frontend llamaba una ruta sin el prefijo correcto de API.
-- Login administrador: se valido el flujo real contra el backend publicado.
-- Periodos academicos: se reviso el listado desde la UI y desde la API para confirmar si el dato existia en Railway.
-- Cache de periodos: se detecto que React Query persistia resultados anteriores en `localStorage`, por lo que otros modulos no veian periodos nuevos.
-- API de periodos: se creo, listo y elimino un periodo temporal para comprobar que el endpoint funcionaba correctamente.
+- Recuperacion de contraseña: se identifico que el frontend llamaba una ruta sin el prefijo correcto de API.
+- Login administrador: se validó el flujo real contra el backend publicado.
+- Periodos academicos: se revisó el listado desde la UI y desde la API para confirmar si el dato existia en Railway.
+- Cache de periodos: se detectó que React Query persistia resultados anteriores en `localStorage`, por lo que otros modulos no veian periodos nuevos.
+- API de periodos: se creó, listo y elimino un periodo temporal para comprobar que el endpoint funcionaba correctamente.
 - Seguridad basica: se consulto un endpoint protegido sin token y se obtuvo HTTP 401.
 
 Resultado: estas pruebas permitieron encontrar y corregir defectos que no habian aparecido en las pruebas automatizadas, especialmente problemas de integracion entre frontend desplegado, backend desplegado, rutas API y cache del navegador.
