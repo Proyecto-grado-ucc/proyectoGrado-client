@@ -17,12 +17,12 @@ Este indice relaciona cada caso de la matriz con una evidencia concreta. Algunas
 | CAL-QA-011 | Captura tecnica Jest + incidencia | `docs/qa/evidencias/tests-backend.png`, `docs/qa/incidencias-qa.md` | Fallida |
 | CAL-QA-012 | Captura tecnica cobertura backend | `docs/qa/evidencias/tests-backend.png` | En Proceso |
 | CAL-QA-013 | Captura tecnica traceroute | `docs/qa/evidencias/traceroute.png` | En Proceso |
-| CAL-QA-014 | Captura login desktop | `docs/qa/evidencias/frontend-login-desktop.png` | Pendiente |
+| CAL-QA-014 | Captura login desktop | `docs/qa/evidencias/login-form-desktop.png`, `docs/qa/evidencias/frontend-login-desktop.png` | Pendiente |
 | CAL-QA-015 | Captura status page + evidencia Ad-Hoc | `docs/qa/evidencias/status-page.png`, `docs/qa/evidencias/exploratorias-adhoc.png` | En Proceso |
-| CAL-QA-016 | Captura tecnica Ad-Hoc | `docs/qa/evidencias/exploratorias-adhoc.png` | En Proceso |
-| CAL-QA-017 | Captura login desktop | `docs/qa/evidencias/frontend-login-desktop.png` | Pendiente |
-| CAL-QA-018 | Captura login mobile | `docs/qa/evidencias/frontend-login-mobile.png` | Pendiente |
-| CAL-QA-019 | Captura login desktop/mobile | `docs/qa/evidencias/frontend-login-desktop.png`, `docs/qa/evidencias/frontend-login-mobile.png` | Pendiente |
+| CAL-QA-016 | Captura formulario recuperacion + evidencia tecnica Ad-Hoc | `docs/qa/evidencias/recuperacion-contrasena-form.png`, `docs/qa/evidencias/exploratorias-adhoc.png` | En Proceso |
+| CAL-QA-017 | Captura login desktop | `docs/qa/evidencias/login-form-desktop.png`, `docs/qa/evidencias/frontend-login-desktop.png` | Pendiente |
+| CAL-QA-018 | Sin captura movil por decision del equipo | Evidencia visual removida | Pendiente |
+| CAL-QA-019 | Captura validacion de formulario | `docs/qa/evidencias/login-validacion-error.png`, `docs/qa/evidencias/login-form-desktop.png` | Pendiente |
 | CAL-QA-020 | Captura tecnica seguridad 401 + status page | `docs/qa/evidencias/seguridad-401.png`, `docs/qa/evidencias/status-page.png` | Aprobada |
 | CAL-QA-021 | Captura tecnica exploratoria | `docs/qa/evidencias/exploratorias-adhoc.png` | Aprobada |
 | CAL-QA-022 | Captura tecnica Ad-Hoc | `docs/qa/evidencias/exploratorias-adhoc.png` | Aprobada |

@@ -36,8 +36,8 @@ Pruebas con incidencia o seguimiento abierto: 50%
 | Rendimiento | CAL-QA-008 | `docs/qa/evidencias/lighthouse.png` |
 | Carga | CAL-QA-005 | `docs/qa/evidencias/carga-ligera.png` |
 | Funcionales | CAL-QA-010, CAL-QA-011, CAL-QA-014, CAL-QA-015, CAL-QA-016 | `docs/qa/evidencias/tests-frontend.png`, `docs/qa/evidencias/tests-backend.png` |
-| Usabilidad | CAL-QA-019 | `docs/qa/evidencias/frontend-login-desktop.png` |
-| Compatibilidad | CAL-QA-017, CAL-QA-018 | `docs/qa/evidencias/frontend-login-desktop.png`, `docs/qa/evidencias/frontend-login-mobile.png` |
+| Usabilidad | CAL-QA-019 | `docs/qa/evidencias/login-validacion-error.png` |
+| Compatibilidad | CAL-QA-017, CAL-QA-018 | `docs/qa/evidencias/login-form-desktop.png` |
 | Seguridad basica | CAL-QA-009, CAL-QA-016, CAL-QA-020 | `docs/qa/evidencias/seguridad-401.png` |
 
 ## Metricas web registradas
@@ -66,9 +66,9 @@ Pruebas con incidencia o seguimiento abierto: 50%
 | QA-BUG-001 | Pruebas unitarias backend fallidas por dependencias faltantes en mocks | To Do |
 | QA-BUG-002 | Rendimiento inicial del frontend por debajo del umbral | To Do |
 | QA-BUG-003 | Accesibilidad automatizada por debajo del umbral | To Do |
-| CAL-QA-014 | Evidencia visual final de login administrador pendiente | To Do |
+| CAL-QA-014 | Evidencia visual final de login administrador pendiente; formulario desktop documentado | To Do |
 | CAL-QA-015 | Validacion final de periodo academico en modulos dependientes | In Progress |
-| CAL-QA-016 | Evidencia visual final de recuperacion de contrasena | In Progress |
+| CAL-QA-016 | Formulario de recuperacion documentado; falta validacion final del envio con cuenta real | In Progress |
 | CAL-QA-017 | Compatibilidad escritorio en navegador alterno | To Do |
 | CAL-QA-018 | Recorrido movil completo | To Do |
 | CAL-QA-019 | Sesion manual final de usabilidad | To Do |

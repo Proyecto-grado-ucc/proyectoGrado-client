@@ -191,7 +191,9 @@ Interpretacion: el endpoint protegido no permite acceso sin token JWT.
 Capturas tomadas con Chrome Headless sobre la aplicacion publicada:
 
 - `docs/qa/evidencias/frontend-login-desktop.png`
-- `docs/qa/evidencias/frontend-login-mobile.png`
+- `docs/qa/evidencias/login-form-desktop.png`
+- `docs/qa/evidencias/login-validacion-error.png`
+- `docs/qa/evidencias/recuperacion-contrasena-form.png`
 - `docs/qa/evidencias/backend-health.png`
 - `docs/qa/evidencias/github-issues-qa.png`
 - `docs/qa/evidencias/w3c-validator.png`
@@ -217,13 +219,7 @@ Comando usado:
   --window-size=1440,1000 \
   https://frontend-production-da48.up.railway.app/login
 
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  --headless=new \
-  --disable-gpu \
-  --no-sandbox \
-  --screenshot=docs/qa/evidencias/frontend-login-mobile.png \
-  --window-size=390,844 \
-  https://frontend-production-da48.up.railway.app/login
+La captura movil generada previamente fue retirada por decision del equipo y no se presenta como evidencia final.
 ```
 
 Capturas adicionales generadas para sustentacion:
@@ -270,6 +266,12 @@ Capturas adicionales generadas para sustentacion:
   --window-size=1600,1200 \
   "https://github.com/Proyecto-grado-ucc/proyectoGrado-client/blob/qa/pruebas-software/cal/frontend/docs/qa/plan-pruebas-iso-29119.md"
 ```
+
+Capturas manuales adicionales tomadas para reforzar casos funcionales y de usabilidad:
+
+- `docs/qa/evidencias/login-form-desktop.png`
+- `docs/qa/evidencias/login-validacion-error.png`
+- `docs/qa/evidencias/recuperacion-contrasena-form.png`
 
 ## Pruebas exploratorias y Ad-Hoc
 
