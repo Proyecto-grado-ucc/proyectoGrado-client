@@ -1,7 +1,6 @@
 # Registro sugerido en GitHub Issues / GitHub Project
 
-La consigna solicita gestionar los casos de prueba en una plataforma colaborativa. Para este proyecto se recomienda usar GitHub Issues en los repositorios del proyecto y, si existe GitHub Projects, moverlos por columnas:
-
+La consigna solicita gestionar los casos de prueba en una plataforma colaborativa. Para este proyecto se usó GitHub Issues en los repositorios del proyecto.
 - To Do / Inicio
 - In Progress / En Proceso
 - Done / Aprobada
