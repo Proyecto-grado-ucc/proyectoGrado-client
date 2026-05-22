@@ -1,7 +1,5 @@
 # Incidencias detectadas durante QA
 
-Estas incidencias deben registrarse en la plataforma colaborativa del proyecto, por ejemplo GitHub Issues o GitHub Projects, y ubicarse inicialmente en estado To Do/Inicio.
-
 ## QA-BUG-001 - Pruebas unitarias backend fallan por dependencias faltantes en mocks
 
 Tipo: prueba funcional automatizada  
@@ -33,9 +31,6 @@ Errores principales:
 - `EstudiantesServicio`: falta mock/provider de `GrupoRepository`.
 - `FormulariosServicio`: falta mock/provider de `DimensionRepository`.
 
-### Accion requerida
-
-Actualizar los archivos de prueba afectados para incluir los providers mock faltantes y volver a ejecutar Jest hasta que la suite quede aprobada.
 
 ## QA-BUG-002 - Rendimiento inicial bajo en Lighthouse
 
@@ -61,9 +56,6 @@ Puntaje minimo sugerido: 70/100.
 }
 ```
 
-### Accion requerida
-
-Revisar peso de bundle, aplicar carga diferida de modulos, separar chunks pesados y analizar dependencias como graficas/exportacion Excel que aumentan la carga inicial.
 
 ## QA-BUG-003 - Accesibilidad automatizada por debajo del umbral
 
@@ -75,7 +67,7 @@ Responsable sugerido: Frontend
 
 ### Descripcion
 
-La categoria Accessibility de Lighthouse obtuvo 80/100. El umbral recomendado para la entrega es >= 90.
+La categoria Accessibility de Lighthouse obtuvo 80/100. El umbral recomendado es >= 90.
 
 ### Resultado esperado
 
@@ -89,6 +81,3 @@ Puntaje minimo sugerido: 90/100.
 }
 ```
 
-### Accion requerida
-
-Revisar etiquetas de formularios, contraste, textos alternativos, orden de foco, navegacion con teclado y estructura semantica de vistas principales.
