@@ -52,10 +52,3 @@ Este documento registra pruebas funcionales y no funcionales aplicables al proye
 - La evidencia debe incluir capturas, salida de comandos o video, segun aplique.
 - La relacion completa caso-evidencia esta registrada en `docs/qa/evidencia-por-caso.md`.
 
-## Recomendaciones inmediatas
-
-- Registrar como incidencias las pruebas CAL-QA-007, CAL-QA-008 y CAL-QA-011.
-- Mejorar rendimiento frontend mediante division de bundles, carga diferida de modulos pesados y revision de assets.
-- Mejorar accesibilidad con labels, contraste, foco visible, estructura semantica y validacion por teclado.
-- Actualizar mocks de pruebas backend para las dependencias agregadas recientemente.
-- Ejecutar capturas manuales de login, periodos, navegadores y movil para completar la evidencia visual.
