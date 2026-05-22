@@ -27,6 +27,6 @@ Este indice relaciona cada caso de la matriz con una evidencia concreta. Algunas
 | CAL-QA-021 | Captura tecnica exploratoria | `docs/qa/evidencias/exploratorias-adhoc.png` | Aprobada |
 | CAL-QA-022 | Captura tecnica Ad-Hoc | `docs/qa/evidencias/exploratorias-adhoc.png` | Aprobada |
 
-## Nota metodologica
+## Nota 
 
-No todas las pruebas requieren una captura de interfaz grafica. En pruebas de rendimiento, carga, seguridad, conectividad y automatizacion, la evidencia tecnica puede ser la salida del comando, reporte de herramienta o captura del resultado generado. Esto mantiene trazabilidad y reproducibilidad sin depender de una demostracion manual completa en vivo.
+No todas las pruebas requieren una captura de interfaz grafica. En pruebas de rendimiento, carga, seguridad, conectividad y automatizacion, la evidencia tecnica puede ser la salida del comando, reporte de herramienta o captura del resultado generado.
