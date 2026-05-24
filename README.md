@@ -2,7 +2,7 @@
 
 Repositorio del **cliente web** del sistema CAL. Construido con React + TypeScript + Vite y desplegado en **Railway**.
 
-🌐 **Producción:** [https://proyectogrado-client-production.up.railway.app](https://proyectogrado-client-production.up.railway.app) *(ajustar URL real de Railway)*
+🌐 **Producción:** [https://frontend-production-da48.up.railway.app/login](https://frontend-production-da48.up.railway.app/login) 
 
 ---
 
