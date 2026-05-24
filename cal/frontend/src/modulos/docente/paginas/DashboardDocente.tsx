@@ -5,7 +5,7 @@ import { useAuthStore } from '../../../seguridad/store';
 
 interface Docente { id: number; usuarioNombre: string; usuarioEmail: string; }
 interface ResultadoKdd { docenteId: number; puntuacionGlobal: number; totalEvaluaciones: number; detalleDimensiones: Record<string, number>; periodoId: number; }
-interface Evaluacion { id: number; docenteEvaluadoId: number; formularioTitulo: string; estado: string; }
+interface Evaluacion { id: number; docenteEvaluadoId: number; formularioTitulo: string; periodoId: number; estado: string; comentariosAnonimos?: string[]; }
 interface Periodo { id: number; nombre: string; }
 
 const fetchAll = async <T extends object>(ruta: string, size = 200): Promise<T[]> => {
@@ -29,13 +29,16 @@ export default function DashboardDocente() {
   const email = useAuthStore(s => s.usuario?.email ?? '');
   const [periodoId, setPeriodoId] = useState<number | null>(null);
 
-  const { data: docentes } = useQuery({ queryKey: ['docentes-dash'], queryFn: () => fetchAll<Docente>('/docentes') });
-  const { data: periodos } = useQuery({ queryKey: ['periodos-dash'], queryFn: () => fetchAll<Periodo>('/periodos', 50) });
+  const { data: docentes } = useQuery({ queryKey: ['docentes-dash', email], queryFn: () => fetchAll<Docente>('/docentes'), staleTime: 0, refetchOnMount: 'always' });
+  const { data: periodos } = useQuery({ queryKey: ['periodos-dash', email], queryFn: () => fetchAll<Periodo>('/periodos', 50), staleTime: 0, refetchOnMount: 'always' });
 
   // Evaluaciones y KDD usan fetchSafe — si devuelven 403, retornan array vacio sin cerrar sesion
   const { data: evaluaciones = [] } = useQuery({
-    queryKey: ['evaluaciones-dash'],
+    queryKey: ['evaluaciones-dash', email],
     queryFn: () => fetchSafe<Evaluacion>('/evaluaciones'),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -43,19 +46,21 @@ export default function DashboardDocente() {
   }, [periodos]);
 
   const { data: resultados = [] } = useQuery({
-    queryKey: ['kdd-dash', periodoId],
+    queryKey: ['kdd-dash', email, periodoId],
     queryFn: () => fetchSafe<ResultadoKdd>('/kdd/resultados', { periodoId }),
     enabled: periodoId !== null,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const miDocente = docentes?.find(d => d.usuarioEmail === email);
   const miResultado = resultados.find(r => r.docenteId === miDocente?.id);
-  const misEvaluaciones = evaluaciones.filter(e => e.docenteEvaluadoId === miDocente?.id);
+  const misEvaluaciones = evaluaciones.filter(e => e.docenteEvaluadoId === miDocente?.id && e.periodoId === periodoId);
 
   const periodoSeleccionado = periodos?.find(p => p.id === periodoId);
   
-  // Agregar propiedad comentariosAnonimos al interface de Evaluacion si no está (Typecast para TS)
-  const comentarios = misEvaluaciones.flatMap(e => (e as any).comentariosAnonimos || []);
+  const comentarios = misEvaluaciones.flatMap(e => e.comentariosAnonimos || []);
 
 
 

@@ -5,7 +5,7 @@ import { useAuthStore } from '../../../seguridad/store';
 
 interface Docente { id: number; usuarioNombre: string; usuarioEmail: string; }
 interface ResultadoKdd { docenteId: number; puntuacionGlobal: number; totalEvaluaciones: number; detalleDimensiones: Record<string, number>; periodoId: number; }
-interface Evaluacion { id: number; docenteEvaluadoId: number; formularioTitulo: string; estado: string; creadoEn: string; }
+interface Evaluacion { id: number; docenteEvaluadoId: number; formularioTitulo: string; periodoId: number; estado: string; creadoEn: string; }
 interface Periodo { id: number; nombre: string; }
 
 const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
@@ -33,23 +33,32 @@ export default function EvaluacionDocente() {
   const email = useAuthStore(s => s.usuario?.email ?? '');
   const [periodoId, setPeriodoId] = useState<number | null>(null);
 
-  const { data: docentes } = useQuery({ queryKey: ['docentes-ed'], queryFn: () => fetchAll<Docente>('/docentes') });
-  const { data: periodos } = useQuery({ queryKey: ['periodos-ed'], queryFn: () => fetchAll<Periodo>('/periodos') });
-  const { data: evaluaciones = [] } = useQuery({ queryKey: ['evaluaciones-ed'], queryFn: () => fetchSafe<Evaluacion>('/evaluaciones') });
+  const { data: docentes } = useQuery({ queryKey: ['docentes-ed', email], queryFn: () => fetchAll<Docente>('/docentes'), staleTime: 0, refetchOnMount: 'always' });
+  const { data: periodos } = useQuery({ queryKey: ['periodos-ed', email], queryFn: () => fetchAll<Periodo>('/periodos'), staleTime: 0, refetchOnMount: 'always' });
+  const { data: evaluaciones = [] } = useQuery({
+    queryKey: ['evaluaciones-ed', email],
+    queryFn: () => fetchSafe<Evaluacion>('/evaluaciones'),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+  });
 
   useEffect(() => {
     if (periodos && periodos.length > 0 && periodoId === null) setPeriodoId(periodos[0].id);
   }, [periodos]);
 
   const { data: resultados = [] } = useQuery({
-    queryKey: ['kdd-ed', periodoId],
+    queryKey: ['kdd-ed', email, periodoId],
     queryFn: () => fetchSafe<ResultadoKdd>('/kdd/resultados', { periodoId }),
     enabled: periodoId !== null,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const miDocente = docentes?.find(d => d.usuarioEmail === email);
   const miResultado = resultados.find(r => r.docenteId === miDocente?.id);
-  const misEvaluaciones = evaluaciones.filter(e => e.docenteEvaluadoId === miDocente?.id);
+  const misEvaluaciones = evaluaciones.filter(e => e.docenteEvaluadoId === miDocente?.id && e.periodoId === periodoId);
 
   return (
     <div className="p-8 min-h-full bg-gray-50">
