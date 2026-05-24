@@ -79,10 +79,10 @@ export default function Login() {
 
           <motion.div variants={itemVariants} className="max-w-md">
             <h1 className="text-white text-4xl md:text-5xl font-bold leading-tight mb-6">
-              Gestión Académica <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Inteligente</span>
+              Sistema de Generación de Horarios Automáticos <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">y Evaluación Docente</span>
             </h1>
             <p className="text-blue-200 text-lg mb-8 leading-relaxed">
-              La plataforma integral para optimizar procesos de enseñanza, automatizar horarios con inteligencia artificial y evaluar el desempeño.
+              Plataforma para la generación automática de horarios académicos y la evaluación del desempeño docente.
             </p>
             <ul className="space-y-4">
               {['Horarios automáticos con IA', 'Evaluación docente en línea', 'Analítica y reportes KDD'].map((item, i) => (
