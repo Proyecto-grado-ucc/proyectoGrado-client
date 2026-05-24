@@ -16,11 +16,11 @@ export default function RecuperarContrasena() {
     setError('');
 
     try {
-      await clienteApi.post('/auth/recuperar-contrasena', { email });
+      await clienteApi.post('/auth/recuperar-contrasena', { email }, { timeout: 15000 });
       setEnviado(true);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Ocurrio un error. Por favor intenta de nuevo.');
+      setError(msg ?? 'No se pudo enviar el enlace. Por favor intenta de nuevo.');
     } finally {
       setCargando(false);
     }
