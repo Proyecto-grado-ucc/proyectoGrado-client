@@ -26,6 +26,15 @@ const errMsg = (e: unknown): string => {
   return Array.isArray(m) ? m.join(', ') : (m ?? 'Error inesperado');
 };
 
+const invalidarEvaluacion = (qc: ReturnType<typeof useQueryClient>, tokens: string[]) => {
+  qc.invalidateQueries({
+    predicate: query => query.queryKey.some(part => (
+      typeof part === 'string' &&
+      tokens.some(token => part.toLowerCase().includes(token.toLowerCase()))
+    )),
+  });
+};
+
 const TABS = ['Formularios', 'Asignaciones', 'Resultados KDD', 'Alertas'];
 
 const estadoBadge: Record<string, string> = {
@@ -59,7 +68,7 @@ function TabFormularios() {
   const mutCrear = useMutation({
     mutationFn: () => api.post('/formularios', { titulo: form.titulo, periodoId: Number(form.periodoId), activo: true, tipoEvaluacion: form.tipoEvaluacion }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['formularios'] });
+      invalidarEvaluacion(qc, ['formularios', 'evaluaciones', 'kdd', 'alertas', 'dashboard']);
       setModal(false);
       setForm({ titulo: '', periodoId: '', tipoEvaluacion: 'DESEMPENO' });
       toast.success('Formulario creado con éxito');
@@ -70,7 +79,7 @@ function TabFormularios() {
   const mutEliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/formularios/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['formularios'] });
+      invalidarEvaluacion(qc, ['formularios', 'evaluaciones', 'kdd', 'alertas', 'dashboard']);
       toast.success('Formulario eliminado');
     },
     onError: (e: unknown) => toast.error(errMsg(e)),
@@ -249,7 +258,7 @@ function TabAsignaciones() {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['evaluaciones'] });
+      invalidarEvaluacion(qc, ['evaluaciones', 'kdd', 'alertas', 'dashboard']);
       setModal(false);
       setForm({ formularioId: '', docenteEvaluadoId: '' });
       setAsignarTodos(false);
@@ -261,7 +270,7 @@ function TabAsignaciones() {
   const mutEliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/evaluaciones/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['evaluaciones'] });
+      invalidarEvaluacion(qc, ['evaluaciones', 'kdd', 'alertas', 'dashboard']);
       toast.success('Asignación eliminada');
     },
     onError: (e: unknown) => toast.error(errMsg(e)),
@@ -413,6 +422,7 @@ function TabAsignaciones() {
 
 // Tab KDD
 function TabKdd() {
+  const qc = useQueryClient();
   const [periodoId, setPeriodoId] = useState<number | ''>('');
   const [ejecutando, setEjecutando] = useState(false);
 
@@ -437,6 +447,7 @@ function TabKdd() {
       const { data } = await clienteApi.post('/kdd/ejecutar', { periodoId: Number(periodoId) });
       const r = data as { resultados: number; alertas: number };
       toast.success(`KDD completado: ${r.resultados} resultados, ${r.alertas} alertas.`);
+      invalidarEvaluacion(qc, ['kdd', 'alertas', 'dashboard']);
       refetch();
     } catch (e: unknown) {
       toast.error('Error: ' + errMsg(e));
@@ -539,12 +550,12 @@ function TabAlertas({ onConteo }: { onConteo: (n: number) => void }) {
 
   const mutLeer = useMutation({
     mutationFn: (id: number) => api.patch(`/alertas/${id}/leer`, {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['alertas'] }),
+    onSuccess: () => invalidarEvaluacion(qc, ['alertas', 'dashboard']),
   });
 
   const mutEliminar = useMutation({
     mutationFn: (id: number) => api.delete(`/alertas/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['alertas'] }),
+    onSuccess: () => invalidarEvaluacion(qc, ['alertas', 'dashboard']),
   });
 
   return (
