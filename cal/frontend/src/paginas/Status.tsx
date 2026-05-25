@@ -191,7 +191,7 @@ export default function Status() {
             </div>
             <h1 className="text-4xl font-bold tracking-normal text-slate-950 md:text-5xl">Estado del servicio</h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Monitoreo publico del frontend, API y capa de seguridad del Sistema CAL desplegado en Railway.
+              Monitoreo publico del frontend, API y capa de seguridad del Sistema CAL desplegado en AWS.
             </p>
           </div>
           <button
@@ -252,7 +252,7 @@ export default function Status() {
           <ServicioFila
             icono={<Globe2 className="h-5 w-5" />}
             nombre="Frontend web"
-            detalle="Interfaz React servida desde Railway"
+            detalle="Interfaz React servida desde AWS Amplify"
             estado="operational"
             metrica="Pagina cargada"
           />
@@ -280,7 +280,7 @@ export default function Status() {
         </div>
 
         <div className="mt-6 rounded-lg border border-slate-200 bg-white px-5 py-4 text-xs leading-6 text-slate-500">
-          Este panel ejecuta chequeos desde el navegador. Los resultados pueden variar por red, region y disponibilidad temporal de Railway.
+          Este panel ejecuta chequeos desde el navegador. Los resultados pueden variar por red, region y disponibilidad temporal de AWS.
         </div>
       </section>
     </main>

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { clienteApi } from '../../../compartido/api';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../seguridad/store';
@@ -19,6 +20,7 @@ const fetchAll = async <T extends object>(ruta: string): Promise<T[]> => {
 
 export default function FormulariosEstudiante() {
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const email = useAuthStore(s => s.usuario?.email ?? '');
   
   const [evaluacionActiva, setEvaluacionActiva] = useState<Evaluacion | null>(null);
@@ -27,11 +29,19 @@ export default function FormulariosEstudiante() {
   const [sinComentario, setSinComentario] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
-  const { data: estudiantes } = useQuery({ queryKey: ['estudiantes-fe'], queryFn: () => fetchAll<Estudiante>('/estudiantes') });
+  const { data: estudiantes } = useQuery({
+    queryKey: ['estudiantes-fe', email],
+    queryFn: () => fetchAll<Estudiante>('/estudiantes'),
+    refetchOnMount: 'always',
+  });
   const miEstudiante = estudiantes?.find(e => e.usuarioEmail === email);
   const miGrupoId = miEstudiante?.grupoId;
 
-  const { data: horarios } = useQuery({ queryKey: ['horarios-fe'], queryFn: () => fetchAll<Horario>('/horarios?archivado=false') });
+  const { data: horarios } = useQuery({
+    queryKey: ['horarios-fe', email],
+    queryFn: () => fetchAll<Horario>('/horarios?archivado=false'),
+    refetchOnMount: 'always',
+  });
   const horarioActivoResumen = horarios?.[0];
 
   const { data: horarioDetalle } = useQuery({
@@ -44,20 +54,38 @@ export default function FormulariosEstudiante() {
   });
 
   const { data: evaluacionesTodas = [], isLoading: cargandoEvals } = useQuery({
-    queryKey: ['evaluaciones-fe'],
-    queryFn: () => fetchAll<Evaluacion>('/evaluaciones')
+    queryKey: ['evaluaciones-fe', email],
+    queryFn: () => fetchAll<Evaluacion>('/evaluaciones'),
+    refetchOnMount: 'always',
   });
 
   const misAsignaciones = horarioDetalle?.asignaciones?.filter(a => a.grupoId === miGrupoId) ?? [];
   const docentesDeMiGrupo = new Set(misAsignaciones.map(a => a.docenteId));
 
-  const evaluacionesDelDocente = evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId));
+  const aplicarFiltroHorario = !!miGrupoId && !!horarioDetalle?.asignaciones?.length;
+  const evaluacionesDelDocente = aplicarFiltroHorario
+    ? evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId))
+    : evaluacionesTodas;
   
   // Una evaluación es pendiente si mi ID NO está en estudiantesCompletaron
   const pendientes = evaluacionesDelDocente.filter(e => 
     (e.estado === 'PENDIENTE' || e.estado === 'ACTIVA') && 
     !(e.estudiantesCompletaron || []).includes(miEstudiante?.id ?? -1)
   );
+
+  useEffect(() => {
+    const evaluacionId = Number(searchParams.get('evaluacionId'));
+    if (!evaluacionId || evaluacionActiva || pendientes.length === 0) return;
+
+    const pendiente = pendientes.find(e => e.id === evaluacionId);
+    if (!pendiente) return;
+
+    setEvaluacionActiva(pendiente);
+    setRespuestas({});
+    setComentarioFinal('');
+    setSinComentario(false);
+    setSearchParams({}, { replace: true });
+  }, [evaluacionActiva, pendientes, searchParams, setSearchParams]);
 
   // Una evaluación es completada si mi ID SÍ está en estudiantesCompletaron
   const completadas = evaluacionesDelDocente.filter(e => 
@@ -101,7 +129,7 @@ export default function FormulariosEstudiante() {
         });
       }
       
-      qc.invalidateQueries({ queryKey: ['evaluaciones-fe'] });
+      qc.invalidateQueries({ queryKey: ['evaluaciones-fe', email] });
       setEvaluacionActiva(null);
       setRespuestas({});
       setComentarioFinal('');

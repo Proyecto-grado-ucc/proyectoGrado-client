@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { clienteApi } from '../../../compartido/api';
 import { useAuthStore } from '../../../seguridad/store';
 
 interface Estudiante { id: number; usuarioEmail: string; grupoId: number; }
-interface Evaluacion { id: number; docenteEvaluadoId: number; docenteEvaluadoNombre: string; formularioTitulo: string; formularioId: number; estado: string; grupoId?: number; creadoEn: string; }
+interface Evaluacion { id: number; docenteEvaluadoId: number; docenteEvaluadoNombre: string; formularioTitulo: string; formularioId: number; estado: string; grupoId?: number; creadoEn: string; estudiantesCompletaron?: number[]; }
 interface Horario { id: number; periodoNombre: string; asignaciones: { grupoId: number; docenteId: number; aulaId: number; franjaId: number; }[]; }
 interface Franja { id: number; diaSemana: string; horaInicio: string; horaFin: string; }
 interface Grupo { id: number; codigo: string; cursoNombre: string; }
@@ -20,16 +21,25 @@ const DIAS: Record<string, string> = { LUN: 'Lun', MAR: 'Mar', MIE: 'Mie', JUE: 
 export default function DashboardEstudiante() {
   const email = useAuthStore(s => s.usuario?.email ?? '');
 
-  const { data: estudiantes } = useQuery({ queryKey: ['estudiantes-de'], queryFn: () => fetchAll<Estudiante>('/estudiantes') });
+  const { data: estudiantes } = useQuery({
+    queryKey: ['estudiantes-de', email],
+    queryFn: () => fetchAll<Estudiante>('/estudiantes'),
+    refetchOnMount: 'always',
+  });
   const miEstudiante = estudiantes?.find(e => e.usuarioEmail === email);
   const miGrupoId = miEstudiante?.grupoId;
 
   const { data: evaluacionesTodas = [] } = useQuery({ 
-    queryKey: ['evaluaciones-de'], 
-    queryFn: () => fetchAll<Evaluacion>('/evaluaciones') 
+    queryKey: ['evaluaciones-de', email],
+    queryFn: () => fetchAll<Evaluacion>('/evaluaciones'),
+    refetchOnMount: 'always',
   });
   
-  const { data: horarios } = useQuery({ queryKey: ['horarios-de'], queryFn: () => fetchAll<Horario>('/horarios') });
+  const { data: horarios } = useQuery({
+    queryKey: ['horarios-de', email],
+    queryFn: () => fetchAll<Horario>('/horarios'),
+    refetchOnMount: 'always',
+  });
   const horarioActivoResumen = horarios?.[0];
 
   const { data: miHorario } = useQuery<Horario | null>({ 
@@ -50,8 +60,14 @@ export default function DashboardEstudiante() {
   const misAsignaciones = miHorario?.asignaciones?.filter(a => a.grupoId === miGrupoId) ?? [];
   const docentesDeMiGrupo = new Set(misAsignaciones.map(a => a.docenteId));
 
-  const misEvaluaciones = evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId));
-  const pendientes = misEvaluaciones.filter(e => e.estado === 'PENDIENTE');
+  const aplicarFiltroHorario = !!miGrupoId && !!miHorario?.asignaciones?.length;
+  const misEvaluaciones = aplicarFiltroHorario
+    ? evaluacionesTodas.filter(e => docentesDeMiGrupo.has(e.docenteEvaluadoId))
+    : evaluacionesTodas;
+  const pendientes = misEvaluaciones.filter(e =>
+    e.estado === 'PENDIENTE' &&
+    !(e.estudiantesCompletaron ?? []).includes(miEstudiante?.id ?? -1)
+  );
 
   const miGrupo = grupos?.find(g => g.id === miGrupoId);
 
@@ -118,9 +134,9 @@ export default function DashboardEstudiante() {
                 <div key={e.id} className="border border-orange-200 bg-orange-50 rounded-xl p-4">
                   <p className="text-sm font-medium text-gray-800">{e.formularioTitulo}</p>
                   <p className="text-xs text-gray-500 mt-1">Docente: {e.docenteEvaluadoNombre}</p>
-                  <a href="/estudiante/formularios" className="inline-block mt-3 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">
+                  <Link to={`/estudiante/formularios?evaluacionId=${e.id}`} className="inline-block mt-3 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">
                     Ir a evaluar
-                  </a>
+                  </Link>
                 </div>
               ))}
             </div>
