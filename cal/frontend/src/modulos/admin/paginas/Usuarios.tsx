@@ -49,6 +49,18 @@ async function eliminarUsuario(id: number) {
 
 const ROLES = ['Admin', 'Docente', 'Estudiante'];
 
+function invalidarConsultasDeUsuarios(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ['usuarios'] });
+  qc.invalidateQueries({ queryKey: ['conteo-docentes'] });
+  qc.invalidateQueries({
+    predicate: query => query.queryKey.some(part => (
+      typeof part === 'string'
+        && ['docentes', 'dashboard-resumen', 'formularios', 'kdd', 'horarios', 'evaluaciones']
+          .some(token => part.toLowerCase().includes(token.toLowerCase()))
+    )),
+  });
+}
+
 export default function Usuarios() {
   const qc = useQueryClient();
   const { abrirConfirmacion } = useUIStore();
@@ -68,8 +80,7 @@ export default function Usuarios() {
     onSuccess: async (usuario) => {
       if (usuario.rol === 'Docente') await registrarDocente(usuario.id);
       if (usuario.rol === 'Estudiante') await registrarEstudiante(usuario.id);
-      qc.invalidateQueries({ queryKey: ['usuarios'] });
-      qc.invalidateQueries({ queryKey: ['conteo-docentes'] });
+      invalidarConsultasDeUsuarios(qc);
       cerrarModal();
     },
     onError: (e: unknown) => {
@@ -80,15 +91,14 @@ export default function Usuarios() {
 
   const mutActualizar = useMutation({
     mutationFn: ({ id, body }: { id: number; body: object }) => actualizarUsuario(id, body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['usuarios'] }); cerrarModal(); },
+    onSuccess: () => { invalidarConsultasDeUsuarios(qc); cerrarModal(); },
     onError: () => setError('Error al actualizar.'),
   });
 
   const mutEliminar = useMutation({
     mutationFn: eliminarUsuario,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['usuarios'] });
-      qc.invalidateQueries({ queryKey: ['conteo-docentes'] });
+      invalidarConsultasDeUsuarios(qc);
     },
   });
 
